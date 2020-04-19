@@ -45,7 +45,7 @@ pulumi.all([fahUsername, fahPassKey, fahRemoteControlPass]).apply(async ([un, pk
     pulumi.log.info("Updated config.xml");
 });
 
-const spotInstance = new SpotInstance("linux", {
+const spotInstance = new SpotInstance("fah-linux", {
     instanceType: "g4dn.xlarge",
     // Max per-hour spot price is $0.3612 USD.
     maxSpotPrice: "0.1578",

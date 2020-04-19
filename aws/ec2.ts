@@ -37,7 +37,7 @@ export class SpotInstance extends pulumi.ComponentResource {
     private instanceSecurity: InstanceSecurity;
 
     constructor(name: string, args: SpotInstanceArgs, opts?: pulumi.ComponentResourceOptions) {
-        super("fah:spotInstance:ec2", name, undefined, opts);
+        super("spotInstance:ec2", name, undefined, opts);
         this.args = args;
         this.name = name;
 
