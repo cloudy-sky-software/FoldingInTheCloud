@@ -1,0 +1,5 @@
+/bin/
+/node_modules/
+rsa
+rsa.pub
+scripts/config.xml

@@ -1,0 +1,3 @@
+name: folding-in-the-cloud
+runtime: nodejs
+description: An app for creating spot instances in the cloud to run folding@home.
