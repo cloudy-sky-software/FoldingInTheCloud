@@ -12,37 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import * as pulumi from "@pulumi/pulumi";
 import * as ssh2 from "ssh2";
 import * as path from "path";
-
-import { Provisioner } from "./provisioner";
 
 // ConnectionArgs tells a provisioner how to access a remote resource. For example, it may need to use
 // SSH or WinRM to connect to the resource in order to run a command or copy a file.
 export interface ConnectionArgs {
     type?: ConnectionType;
-    host: pulumi.Input<string>;
-    port?: pulumi.Input<number>;
-    username?: pulumi.Input<string>;
-    password?: pulumi.Input<string>;
-    privateKey?: pulumi.Input<string>;
-    privateKeyPassphrase?: pulumi.Input<string>;
-    /**
-     * A string value to control the replacement of the provisioner during each update.
-     * Provide a stable value if you do not need the provisioner to run each time you run an update.
-     */
-    changeToken: string;
+    host: string;
+    port?: number;
+    username?: string;
+    password?: string;
+    privateKey?: string;
+    privateKeyPassphrase?: string;
 }
 
 // ConnectionType is the set of legal connection mechanisms to use. Default is SSH.
 export type ConnectionType = "ssh" | "winrm";
 
-function connTypeOrDefault(conn: pulumi.Unwrap<ConnectionArgs>): ConnectionType {
+function connTypeOrDefault(conn: ConnectionArgs): ConnectionType {
     return conn.type || "ssh";
 }
 
-function connPortOrDefault(conn: pulumi.Unwrap<ConnectionArgs>): number {
+function connPortOrDefault(conn: ConnectionArgs): number {
     if (conn.port !== undefined) {
         return conn.port;
     }
@@ -58,7 +50,7 @@ function connPortOrDefault(conn: pulumi.Unwrap<ConnectionArgs>): number {
     }
 }
 
-function connUsernameOrDefault(conn: pulumi.Unwrap<ConnectionArgs>): string {
+function connUsernameOrDefault(conn: ConnectionArgs): string {
     if (conn.username) {
         return conn.username;
     }
@@ -74,7 +66,7 @@ function connUsernameOrDefault(conn: pulumi.Unwrap<ConnectionArgs>): string {
     }
 }
 
-function connToSsh2(conn: pulumi.Unwrap<ConnectionArgs>): any {
+function connToSsh2(conn: ConnectionArgs): any {
     return {
         host: conn.host,
         port: conn.port,
@@ -85,7 +77,7 @@ function connToSsh2(conn: pulumi.Unwrap<ConnectionArgs>): any {
     };
 }
 
-function copyFile(conn: pulumi.Unwrap<ConnectionArgs>, src: string, dest: string): Promise<void> {
+export async function copyFile(conn: ConnectionArgs, src: string, dest: string): Promise<void> {
     const connType = connTypeOrDefault(conn);
     if (connType !== "ssh") {
         throw new Error("only SSH connection types currently supported");
@@ -129,7 +121,7 @@ function copyFile(conn: pulumi.Unwrap<ConnectionArgs>, src: string, dest: string
     });
 }
 
-function runCommand(conn: pulumi.Unwrap<ConnectionArgs>, cmd: string): Promise<string> {
+export async function runCommand(conn: ConnectionArgs, cmd: string): Promise<string> {
     const connType = connTypeOrDefault(conn);
     if (connType !== "ssh") {
         throw new Error("only SSH connection types currently supported");
@@ -156,7 +148,7 @@ function runCommand(conn: pulumi.Unwrap<ConnectionArgs>, cmd: string): Promise<s
                     }).on("data", (data: any) => {
                         console.log(data.toString("utf8"));
                     }).stderr.on("data", (data: any) => {
-                        console.error(data.toString("utf8"));
+                        console.log(data.toString("utf8"));
                     });
                 });
             }).on("error", (err: any) => {
@@ -172,28 +164,9 @@ function runCommand(conn: pulumi.Unwrap<ConnectionArgs>, cmd: string): Promise<s
     });
 }
 
-
-// CopyFile is a provisioner step that can copy a file from the machine running Pulumi to the newly created resource.
-export class CopyFile extends pulumi.ComponentResource {
-    private readonly provisioner: Provisioner<ConnectionArgs>;
-
-    constructor(name: string, args: CopyFileArgs, opts?: pulumi.ComponentResourceOptions) {
-        super("pulumi:provisioners:CopyFile", name, args, opts);
-
-        this.provisioner = new Provisioner<ConnectionArgs>(
-            `${name}-provisioner`,
-            {
-                dep: args.conn,
-                onCreate: (conn) => copyFile(conn, args.src, args.dest),
-            },
-            { parent: this, ...opts || {} },
-        );
-    }
-}
-
 export interface CopyFileArgs {
     // conn contains information on how to connect to the destination, in addition to dependency information.
-    conn: pulumi.Input<ConnectionArgs>;
+    conn: ConnectionArgs;
     // src is the source of the file or directory to copy. It can be specified as relative to the current
     // working directory or as an absolute path. This cannot be specified if content is set.
     src: string;
@@ -202,34 +175,6 @@ export interface CopyFileArgs {
     // content?: pulumi.Input<string>;
     // dest is required and specifies the absolute path on the target where the file will be copied to.
     dest: string;
-}
-
-// RemoteExec runs remote commands and/or invokes scripts. If commands and scripts are specified, they are
-// run in the following order: command, commands, script, and finally then scripts.
-export class RemoteExec extends pulumi.ComponentResource {
-    private readonly provisioner: Provisioner<ConnectionArgs>;
-
-    constructor(name: string, args: RemoteExecArgs, opts?: pulumi.ComponentResourceOptions) {
-        super("pulumi:provisioners:RemoteExec", name, args, opts);
-
-        this.provisioner = new Provisioner<ConnectionArgs>(
-            `${name}-provisioner`,
-            {
-                dep: args.conn,
-                onCreate: async (conn) => {
-                    if (args.command) {
-                        await runCommand(conn, args.command);
-                    }
-                    if (args.commands) {
-                        for (const cmd of args.commands) {
-                            await runCommand(conn, cmd);
-                        }
-                    }
-                },
-            },
-            { parent: this, ...opts || {} },
-        );
-    }
 }
 
 export interface RemoteExecArgs {

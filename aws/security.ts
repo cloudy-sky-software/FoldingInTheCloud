@@ -1,10 +1,9 @@
 import * as pulumi from "@pulumi/pulumi";
 import * as aws from "@pulumi/aws";
 
-import { InstanceSecurity } from "../instanceSecurity";
 import { getDefaultTags, getAwsAz } from "../utils";
 
-export class Ec2InstanceSecurity extends pulumi.ComponentResource implements InstanceSecurity {
+export class Ec2InstanceSecurity extends pulumi.ComponentResource {
     private name: string;
 
     public instanceProfile: aws.iam.InstanceProfile | undefined;
@@ -12,11 +11,20 @@ export class Ec2InstanceSecurity extends pulumi.ComponentResource implements Ins
     public securityGroup: aws.ec2.SecurityGroup | undefined;
 
     constructor(name: string, opts?: pulumi.ComponentResourceOptions) {
-        super("spotInstance:ec2:security", name, opts);
+        super("spotInstance:ec2:security", name, undefined, opts);
         this.name = name;
+
+        this.setupIdentities();
+        this.setupPrivateNetworking();
+
+        this.registerOutputs({
+            instanceProfile: this.instanceProfile,
+            subnet: this.subnet,
+            securityGroup: this.securityGroup,
+        });
     }
 
-    public async setupIdentities(): Promise<void> {
+    private setupIdentities() {
         const assumeInstanceRolePolicyDoc: aws.iam.PolicyDocument = {
             Version: "2012-10-17",
             Statement: [{
@@ -37,7 +45,8 @@ export class Ec2InstanceSecurity extends pulumi.ComponentResource implements Ins
                     Effect: "Allow",
                     Action: [
                         "cloudwatch:*",
-                        "ec2:*"
+
+                        "ec2:*",
                     ],
                     Resource: "*",
                 },
@@ -67,7 +76,7 @@ export class Ec2InstanceSecurity extends pulumi.ComponentResource implements Ins
         ];
     }
 
-    public async setupPrivateNetworking(): Promise<void> {
+    private setupPrivateNetworking() {
         const vpc = new aws.ec2.Vpc(`${this.name}-vpc`, {
             cidrBlock: "10.10.0.0/24",
             enableDnsHostnames: true,
@@ -77,12 +86,11 @@ export class Ec2InstanceSecurity extends pulumi.ComponentResource implements Ins
         this.subnet = new aws.ec2.Subnet(`${this.name}-subnet`, {
             vpcId: vpc.id,
             cidrBlock: "10.10.0.0/24",
-            availabilityZone: await getAwsAz(0),
+            availabilityZone: pulumi.output(getAwsAz(0)),
             mapPublicIpOnLaunch: true,
             tags: getDefaultTags(),
         }, { parent: this });
 
-        // Create a new security group that permits SSH and web access.
         this.securityGroup = new aws.ec2.SecurityGroup(`${this.name}-secGroup`, {
             description: "Security group for Spot instance.",
             ingress: this.getIngressRules(),

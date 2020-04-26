@@ -1,11 +1,14 @@
 import * as pulumi from "@pulumi/pulumi";
+import * as aws from "@pulumi/aws";
 
 import * as axios from "axios";
 import * as ssh2 from "ssh2";
 import { ParsedKey } from "ssh2-streams";
 
 import { SpotInstance } from "./aws/ec2";
+import { LambdaProvisioner } from "./aws/lambdaProvisioner";
 import { execSync } from "child_process";
+import { getDefaultTags } from "./utils";
 
 // Get the config ready to go.
 const config = new pulumi.Config();
@@ -26,6 +29,8 @@ pulumi.all([privateKey, privateKeyPassphrase]).apply(([prKey, pass]) => {
 const fahPassKey = config.requireSecret("fahPassKey");
 const fahUsername = config.require("fahUsername");
 const fahRemoteControlPass = config.requireSecret("fahRemoteControlPass");
+
+// Transform the FAH config.xml with the stack config properties provided by the user.
 pulumi.all([fahUsername, fahPassKey, fahRemoteControlPass]).apply(async ([un, pk, rcPass]) => {
     const execLocal = (cmd: string) => {
         execSync(cmd, {
@@ -45,13 +50,62 @@ pulumi.all([fahUsername, fahPassKey, fahRemoteControlPass]).apply(async ([un, pk
     pulumi.log.info("Updated config.xml");
 });
 
+const bucket = new aws.s3.Bucket("fah-bucket", {
+    bucket: "fah-bucket",
+    serverSideEncryptionConfiguration: {
+        rule: {
+            applyServerSideEncryptionByDefault: {
+                sseAlgorithm: "AES256"
+            }
+        }
+    },
+    versioning: {
+        enabled: true
+    },
+    tags: getDefaultTags(),
+});
+
+const zipFileName = "fah-scripts";
+const bucketObject = new aws.s3.BucketObject("fah-scripts", {
+    bucket: bucket,
+    key: zipFileName,
+    serverSideEncryption: "AES256",
+    source: new pulumi.asset.FileArchive("./scripts")
+});
+
 const spotInstance = new SpotInstance("fah-linux", {
+    /**
+     * When picking an instance type, be sure to also pick a region
+     * where the chance of interruption is low. Set the location using
+     * `pulumi config set aws:region <region>` to use that region.
+     * Use the Spot Instance Advisor to find a region for the instance type.
+     * https://aws.amazon.com/ec2/spot/instance-advisor/
+     */
     instanceType: "g4dn.xlarge",
-    // Max per-hour spot price is $0.3612 USD.
-    maxSpotPrice: "0.1578",
+    /**
+     * Max per-hour spot price is based on the price history for the instance
+     * per https://aws.amazon.com/ec2/spot/pricing/.
+     */
+    maxSpotPrice: "0.442",
+    /**
+     * Defined duration spot instances are less likely to be interrupted.
+     * And if they are interrupted, we won't incur charges for the hour
+     * in which it is interrupted. That sounds like a good deal.
+     */
+    blockDurationMinutes: 180,
+
     privateKey,
     publicKey,
     privateKeyPassphrase,
-});
+}, { dependsOn: bucketObject });
 
+export const bucketArn = bucket.arn;
 export const spotRequestId = spotInstance.spotRequest?.id;
+
+if (spotInstance && spotInstance.spotRequest) {
+    const lambdaProvisioner = new LambdaProvisioner("fah", {
+        bucket: bucket,
+        spotInstanceRequestId: spotInstance.spotRequest.id,
+        zipFilename: zipFileName,
+    }, { dependsOn: spotInstance });
+}
