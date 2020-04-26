@@ -4,7 +4,7 @@ MAJOR_MINOR_VERSION=7.5
 PATCH_VERSION=1
 VERSION=${MAJOR_MINOR_VERSION}.${PATCH_VERSION}
 
-echo "Launching FAH installation script...."
+echo "Launching FAH installation script..."
 
 >/dev/null 2>/dev/null which FAHClient || {
     echo "FAHClient not detected. Installing..."
