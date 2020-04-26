@@ -1,8 +1,14 @@
 #!/bin/bash
 
-MAJOR_MINOR_VERSION=7.5
-PATCH_VERSION=1
+MAJOR_MINOR_VERSION=7.6
+PATCH_VERSION=9
 VERSION=${MAJOR_MINOR_VERSION}.${PATCH_VERSION}
+
+install_fah_client() {
+    wget "https://download.foldingathome.org/releases/public/release/fahclient/debian-stable-64bit/v${MAJOR_MINOR_VERSION}/fahclient_${VERSION}_amd64.deb" && \
+        sudo DEBIAN_FRONTEND=noninteractive dpkg -i --force-depends "fahclient_${VERSION}_amd64.deb" 2>/dev/null && \
+        rm "fahclient_${VERSION}_amd64.deb"
+}
 
 echo "Printing NVIDIA CUDA drivers version info..."
 cat /proc/driver/nvidia/version
@@ -11,11 +17,16 @@ echo "Launching FAH installation script..."
 
 >/dev/null 2>/dev/null which FAHClient || {
     echo "FAHClient not detected. Installing..."
-
-    wget "https://download.foldingathome.org/releases/public/release/fahclient/debian-stable-64bit/v${MAJOR_MINOR_VERSION}/fahclient_${VERSION}_amd64.deb" && \
-        sudo DEBIAN_FRONTEND=noninteractive dpkg -i --force-depends "fahclient_${VERSION}_amd64.deb" 2>/dev/null && \
-        rm "fahclient_${VERSION}_amd64.deb"
+    install_fah_client
 }
+
+INSTALLED_VERSION=$(FAHClient --version)
+if [ "${INSTALLED_VERSION}" = "${VERSION}" ]; then
+    echo "FAHClient version is ${INSTALLED_VERSION}"
+else
+    "Installed version v${INSTALLED_VERSION} does not match expected version v${VERSION}. Will install the expected version..."
+    install_fah_client
+fi
 
 echo "Stopping FAHClient service..."
 sudo /etc/init.d/FAHClient stop

@@ -143,9 +143,17 @@ async function deleteScheduledEvent(spotInstanceRequestId: string) {
     const cw = new aws.sdk.CloudWatchEvents({
         region: AWS_REGION,
     });
-    const result = await cw.deleteRule({
-        Name: `${SCHEDULED_EVENT_NAME_PREFIX}_${spotInstanceRequestId}`,
-    }).promise();
+
+    let result;
+    try {
+        result = await cw.deleteRule({
+            Name: `${SCHEDULED_EVENT_NAME_PREFIX}_${spotInstanceRequestId}`,
+        }).promise();
+    } catch (err) {
+        if (result?.$response.httpResponse.statusCode !== 404) {
+            console.error("Error deleting CloudWatch scheduled event rule:", err);
+        }
+    }
 }
 
 async function provisionInstance(spotInstanceRequestId: string, instancePublicIp: string, sshPrivateKey: string) {
@@ -247,6 +255,7 @@ export class LambdaProvisioner extends pulumi.ComponentResource {
                         "logs:PutLogEvents",
 
                         "events:PutRule",
+                        "events:DeleteRule",
 
                         "ec2:DescribeSpotInstanceRequests",
                         "ec2:DescribeInstances",
