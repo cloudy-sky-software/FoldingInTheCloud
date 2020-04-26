@@ -86,7 +86,7 @@ export async function copyFile(conn: ConnectionArgs, src: string, dest: string):
     const scp2 = require("scp2");
     const mkdirPromise = new Promise((resolve, reject) => {
         scp2.defaults({ ...connToSsh2(conn) });
-        scp2.mkdir(path.dirname(src), (err: any) => {
+        scp2.mkdir(path.dirname(dest), (err: any) => {
             if (!err) {
                 resolve();
                 return;

@@ -56,3 +56,33 @@ async function getScriptsHash(): Promise<string> {
     });
     return p;
 }
+
+export function getUserData(): string {
+    const PATH = "export PATH=/usr/local/cuda-10.2/bin:${PATH}";
+
+    return `#!/bin/bash
+sudo apt-get update --yes
+sudo apt-get install ec2-instance-connect --yes
+
+echo "Preparing the instance..."
+sudo apt install gcc --yes
+
+echo "Installing NVIDIA CUDA drivers..."
+# https://developer.nvidia.com/cuda-downloads?target_os=Linux&target_arch=x86_64&target_distro=Ubuntu&target_version=1804&target_type=deblocal
+wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/cuda-ubuntu1804.pin
+sudo mv cuda-ubuntu1804.pin /etc/apt/preferences.d/cuda-repository-pin-600
+wget http://developer.download.nvidia.com/compute/cuda/10.2/Prod/local_installers/cuda-repo-ubuntu1804-10-2-local-10.2.89-440.33.01_1.0-1_amd64.deb
+sudo dpkg -i cuda-repo-ubuntu1804-10-2-local-10.2.89-440.33.01_1.0-1_amd64.deb
+sudo apt-key add /var/cuda-repo-10-2-local-10.2.89-440.33.01/7fa2af80.pub
+sudo apt-get update
+sudo apt-get -y install cuda
+echo "Installed CUDA drivers."
+
+${PATH}
+sudo systemctl enable nvidia-persistenced
+sudo cp /lib/udev/rules.d/40-vm-hotadd.rules /etc/udev/rules.d
+sed '9d' /etc/udev/rules.d/40-vm-hotadd.rules
+
+echo "Rebooting the instance..."
+sudo reboot`;
+}

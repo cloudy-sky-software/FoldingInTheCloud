@@ -12,10 +12,20 @@ import { getDefaultTags } from "../utils";
 import { generateKeyPair } from "crypto";
 
 const AWS_REGION = aws.config.region;
+/**
+ * The name of the scheduled event that is created when copying a file to
+ * the EC2 instance fails after several retries. The scheduled event
+ * will be removed once an instance is successfully provisioned.
+ */
+const SCHEDULED_EVENT_NAME_PREFIX = "ScheduledEC2Provisioner";
+
+/**
+ * The path where the Lambda will download/extract the scripts zip file.
+ */
 const LOCAL_SCRIPTS_PATH = "/tmp/scripts";
 
 const INSTANCE_USER = "ubuntu";
-const LINUX_USER_SCRIPTS_DIR = `/home/${INSTANCE_USER}/scripts/`;
+const LINUX_USER_SCRIPTS_DIR = `/home/${INSTANCE_USER}/`;
 
 export interface LambdaProvisionerArgs {
     spotInstanceRequestId: pulumi.Output<string>;
@@ -110,7 +120,35 @@ async function sendSSHPublicKeyToInstance(instance: Instance, publicKey: string)
     console.log("SSH public key sent.");
 }
 
-async function provisionInstance(instancePublicIp: string, sshPrivateKey: string) {
+async function checkAndCreateScheduledEvent(spotInstanceRequestId: string) {
+    const cw = new aws.sdk.CloudWatchEvents({
+        region: AWS_REGION,
+    });
+    const result = await cw.describeRule({
+        Name: `${SCHEDULED_EVENT_NAME_PREFIX}_${spotInstanceRequestId}`,
+    }).promise();
+    if (result.$response.httpResponse.statusCode === 200) {
+        console.log(`Scheduled event ${SCHEDULED_EVENT_NAME_PREFIX} already exists.`);
+        return;
+    }
+
+    await cw.putRule({
+        Name: `${SCHEDULED_EVENT_NAME_PREFIX}_${spotInstanceRequestId}`,
+        Description: "Scheduled Event to provision an EC2 spot instance until it succeeds. This is a temporary event and will be deleted.",
+        ScheduleExpression: "rate(15 minutes)",
+    }).promise();
+}
+
+async function deleteScheduledEvent(spotInstanceRequestId: string) {
+    const cw = new aws.sdk.CloudWatchEvents({
+        region: AWS_REGION,
+    });
+    const result = await cw.deleteRule({
+        Name: `${SCHEDULED_EVENT_NAME_PREFIX}_${spotInstanceRequestId}`,
+    }).promise();
+}
+
+async function provisionInstance(spotInstanceRequestId: string, instancePublicIp: string, sshPrivateKey: string) {
     const conn: ConnectionArgs = {
         type: "ssh",
         host: instancePublicIp,
@@ -118,9 +156,15 @@ async function provisionInstance(instancePublicIp: string, sshPrivateKey: string
         privateKey: sshPrivateKey,
     };
 
-    console.log(`Copying files to the instance ${instancePublicIp}...`);
-    // Copy the files to the EC2 instance.
-    await copyFile(conn, LOCAL_SCRIPTS_PATH, LINUX_USER_SCRIPTS_DIR);
+    try {
+        console.log(`Copying files to the instance ${instancePublicIp}...`);
+        // Copy the files to the EC2 instance.
+        await copyFile(conn, LOCAL_SCRIPTS_PATH, LINUX_USER_SCRIPTS_DIR);
+    } catch (err) {
+        console.error("Could not copy files to the instance at this time. Will schedule a future event to try again.");
+        checkAndCreateScheduledEvent(spotInstanceRequestId);
+        return;
+    }
 
     const commands = [
         `chmod 755 ${LINUX_USER_SCRIPTS_DIR}*.sh`,
@@ -131,6 +175,7 @@ async function provisionInstance(instancePublicIp: string, sshPrivateKey: string
     for (const cmd of commands) {
         await runCommand(conn, cmd);
     }
+    await deleteScheduledEvent(spotInstanceRequestId);
 }
 
 export class LambdaProvisioner extends pulumi.ComponentResource {
@@ -201,6 +246,8 @@ export class LambdaProvisioner extends pulumi.ComponentResource {
                         "logs:CreateLogStream",
                         "logs:PutLogEvents",
 
+                        "events:PutRule",
+
                         "ec2:DescribeSpotInstanceRequests",
                         "ec2:DescribeInstances",
                         "ec2-instance-connect:SendSSHPublicKey",
@@ -253,7 +300,7 @@ export class LambdaProvisioner extends pulumi.ComponentResource {
                         // Convert the public to an OpenSSH public key format.
                         const sshPublicKey = sshpk.parseKey(publicKey, "pem").toString("ssh");
                         await sendSSHPublicKeyToInstance(instance, sshPublicKey);
-                        await provisionInstance(instance.PublicIpAddress!, privateKey);
+                        await provisionInstance(spotInstanceRequestId, instance.PublicIpAddress!, privateKey);
                         console.log("All done!");
                         resolve();
                     });

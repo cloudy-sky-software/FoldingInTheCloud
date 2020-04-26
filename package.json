@@ -13,7 +13,7 @@
         "@pulumi/awsx": "^0.20.0",
         "@pulumi/pulumi": "^2.0.0",
         "axios": "^0.19.2",
-        "scp2": "^0.5.0",
+        "scp2": "github:spmjs/node-scp2#master",
         "ssh2": "^0.8.9",
         "sshpk": "^1.16.1",
         "unzipper": "^0.10.11",
