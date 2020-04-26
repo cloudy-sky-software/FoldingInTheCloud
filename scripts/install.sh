@@ -24,7 +24,7 @@ echo "Sleeping for 30s..."
 # Sleep for 30 seconds to let FAH complete stopping.
 sleep 30
 
-sudo cp ~/scripts/config.xml /etc/fahclient/config.xml
+sudo cp ~/config.xml /etc/fahclient/config.xml
 
 echo "Starting FAHClient service..."
 sudo /etc/init.d/FAHClient start
