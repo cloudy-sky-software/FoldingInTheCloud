@@ -1,5 +1,7 @@
 #!/bin/bash
 
+echo "Launching FAH installation script..."
+
 MAJOR_MINOR_VERSION=7.6
 PATCH_VERSION=9
 VERSION=${MAJOR_MINOR_VERSION}.${PATCH_VERSION}
@@ -7,13 +9,11 @@ VERSION=${MAJOR_MINOR_VERSION}.${PATCH_VERSION}
 install_fah_client() {
     wget "https://download.foldingathome.org/releases/public/release/fahclient/debian-stable-64bit/v${MAJOR_MINOR_VERSION}/fahclient_${VERSION}_amd64.deb"
     sudo DEBIAN_FRONTEND=noninteractive dpkg -i --force-depends "fahclient_${VERSION}_amd64.deb" 2>/dev/null
-    rm "fahclient_${VERSION}_amd64.deb*"
+    rm "fahclient_${VERSION}_amd64.deb"*
 }
 
 echo "Printing NVIDIA CUDA drivers version info..."
 cat /proc/driver/nvidia/version
-
-echo "Launching FAH installation script..."
 
 >/dev/null 2>/dev/null which FAHClient || {
     echo "FAHClient not detected. Installing..."

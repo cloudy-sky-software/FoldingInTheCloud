@@ -1,6 +1,7 @@
 import * as pulumi from "@pulumi/pulumi";
 import * as aws from "@pulumi/aws";
 
+import { AWSError } from "aws-sdk";
 import { DescribeSpotInstanceRequestsResult, DescribeInstancesResult, Instance } from "aws-sdk/clients/ec2";
 
 import * as unzipper from "unzipper";
@@ -124,12 +125,23 @@ async function checkAndCreateScheduledEvent(spotInstanceRequestId: string) {
     const cw = new aws.sdk.CloudWatchEvents({
         region: AWS_REGION,
     });
-    const result = await cw.describeRule({
-        Name: `${SCHEDULED_EVENT_NAME_PREFIX}_${spotInstanceRequestId}`,
-    }).promise();
-    if (result.$response.httpResponse.statusCode === 200) {
-        console.log(`Scheduled event ${SCHEDULED_EVENT_NAME_PREFIX} already exists.`);
-        return;
+    let result;
+    try {
+        result = await cw.describeRule({
+            Name: `${SCHEDULED_EVENT_NAME_PREFIX}_${spotInstanceRequestId}`,
+        }).promise();
+        if (result.$response.httpResponse.statusCode === 200) {
+            console.log(`Scheduled event ${SCHEDULED_EVENT_NAME_PREFIX} already exists. Won't re-create it.`);
+            return;
+        }
+    } catch (err) {
+        /**
+         * If the error is anything else other than a `ResourceNotFoundException`, re-throw it.
+         * We expect to _not_ find it, so we can actually create it.
+         */
+        if (err.code !== "ResourceNotFoundException") {
+            throw err;
+        }
     }
 
     await cw.putRule({
@@ -150,8 +162,9 @@ async function deleteScheduledEvent(spotInstanceRequestId: string) {
             Name: `${SCHEDULED_EVENT_NAME_PREFIX}_${spotInstanceRequestId}`,
         }).promise();
     } catch (err) {
-        if (result?.$response.httpResponse.statusCode !== 404) {
-            console.error("Error deleting CloudWatch scheduled event rule:", err);
+        // If the error is anything but a 404, re-throw it. Otherwise, ignore it.
+        if (err.code !== "ResourceNotFoundException") {
+            throw err;
         }
     }
 }
@@ -165,12 +178,12 @@ async function provisionInstance(spotInstanceRequestId: string, instancePublicIp
     };
 
     try {
+        await checkAndCreateScheduledEvent(spotInstanceRequestId);
         console.log(`Copying files to the instance ${instancePublicIp}...`);
         // Copy the files to the EC2 instance.
         await copyFile(conn, LOCAL_SCRIPTS_PATH, LINUX_USER_SCRIPTS_DIR);
     } catch (err) {
-        console.error("Could not copy files to the instance at this time. Will schedule a future event to try again.");
-        checkAndCreateScheduledEvent(spotInstanceRequestId);
+        console.error("Could not copy files to the instance at this time.", err);
         return;
     }
 
@@ -254,6 +267,7 @@ export class LambdaProvisioner extends pulumi.ComponentResource {
                         "logs:CreateLogStream",
                         "logs:PutLogEvents",
 
+                        "events:DescribeRule",
                         "events:PutRule",
                         "events:DeleteRule",
 
@@ -317,6 +331,7 @@ export class LambdaProvisioner extends pulumi.ComponentResource {
                 return p;
             },
             role: this.role,
+            memorySize: 512, // MB
             timeout: 600, // Seconds
             runtime: aws.lambda.NodeJS12dXRuntime,
             tags: getDefaultTags()
