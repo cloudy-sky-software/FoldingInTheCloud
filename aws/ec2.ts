@@ -2,7 +2,7 @@ import * as pulumi from "@pulumi/pulumi";
 import * as aws from "@pulumi/aws";
 
 import { Ec2InstanceSecurity } from "./security";
-import { getDefaultTags, getAmi, getUserData } from "../utils";
+import { getAmi, getUserData } from "../utils";
 
 export interface SpotInstanceArgs {
     privateKey: pulumi.Input<string>;
@@ -56,7 +56,6 @@ export class SpotInstance extends pulumi.ComponentResource {
             rootBlockDevice: {
                 volumeSize: 50,
             },
-            tags: getDefaultTags(),
             availabilityZone: this.ec2Security.subnet.availabilityZone,
             vpcSecurityGroupIds: [this.ec2Security.securityGroup.id],
             subnetId: this.ec2Security.subnet.id,

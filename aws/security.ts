@@ -1,7 +1,7 @@
 import * as pulumi from "@pulumi/pulumi";
 import * as aws from "@pulumi/aws";
 
-import { getDefaultTags, getAwsAz } from "../utils";
+import { getAwsAz } from "../utils";
 
 export class Ec2InstanceSecurity extends pulumi.ComponentResource {
     private name: string;
@@ -54,7 +54,6 @@ export class Ec2InstanceSecurity extends pulumi.ComponentResource {
         };
         const instanceRole = new aws.iam.Role(`${this.name}-role`, {
             assumeRolePolicy: JSON.stringify(assumeInstanceRolePolicyDoc),
-            tags: getDefaultTags(),
         }, { parent: this });
 
         const instanceRolePolicy = new aws.iam.RolePolicy(`${this.name}-policy`, {
@@ -80,7 +79,6 @@ export class Ec2InstanceSecurity extends pulumi.ComponentResource {
         const vpc = new aws.ec2.Vpc(`${this.name}-vpc`, {
             cidrBlock: "10.10.0.0/24",
             enableDnsHostnames: true,
-            tags: getDefaultTags(),
         }, { parent: this });
 
         this.subnet = new aws.ec2.Subnet(`${this.name}-subnet`, {
@@ -88,7 +86,6 @@ export class Ec2InstanceSecurity extends pulumi.ComponentResource {
             cidrBlock: "10.10.0.0/24",
             availabilityZone: pulumi.output(getAwsAz(0)),
             mapPublicIpOnLaunch: true,
-            tags: getDefaultTags(),
         }, { parent: this });
 
         this.securityGroup = new aws.ec2.SecurityGroup(`${this.name}-secGroup`, {
@@ -98,12 +95,10 @@ export class Ec2InstanceSecurity extends pulumi.ComponentResource {
                 { protocol: "-1", fromPort: 0, toPort: 0, cidrBlocks: ["0.0.0.0/0"] },
             ],
             vpcId: vpc.id,
-            tags: getDefaultTags(),
         }, { parent: this });
 
         const ig = new aws.ec2.InternetGateway(`${this.name}-ig`, {
             vpcId: vpc.id,
-            tags: getDefaultTags(),
         }, { parent: this });
 
         const routeTable = new aws.ec2.RouteTable(`${this.name}-rt`, {

@@ -3,3 +3,4 @@
 rsa
 rsa.pub
 scripts/config.xml
+*.txt

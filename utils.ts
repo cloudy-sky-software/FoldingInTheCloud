@@ -1,4 +1,3 @@
-import * as pulumi from "@pulumi/pulumi";
 import * as aws from "@pulumi/aws";
 
 import * as crypto from "crypto";
@@ -10,13 +9,6 @@ export async function getAwsAz(index: number): Promise<string> {
         state: "available",
     });
     return azs.names[index];
-}
-
-export function getDefaultTags(): { [key: string]: string } {
-    return {
-        project: pulumi.getProject(),
-        stack: pulumi.getStack(),
-    };
 }
 
 export async function getAmi(): Promise<aws.GetAmiResult> {

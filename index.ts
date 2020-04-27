@@ -8,13 +8,16 @@ import { ParsedKey } from "ssh2-streams";
 import { SpotInstance } from "./aws/ec2";
 import { LambdaProvisioner } from "./aws/lambdaProvisioner";
 import { execSync } from "child_process";
-import { getDefaultTags } from "./utils";
+import { registerDefaultTags } from "./tags";
 
 // Get the config ready to go.
 const config = new pulumi.Config();
 const publicKey = config.require("publicKey");
 const privateKey = config.requireSecret("privateKey");
 const privateKeyPassphrase = config.get("privateKeyPassphrase") || "";
+
+// Register default tags for all taggable resources.
+registerDefaultTags();
 
 pulumi.all([privateKey, privateKeyPassphrase]).apply(([prKey, pass]) => {
     pulumi.log.info("Parsing private key...", undefined, undefined, true);
@@ -62,7 +65,6 @@ const bucket = new aws.s3.Bucket("fah-bucket", {
     versioning: {
         enabled: true
     },
-    tags: getDefaultTags(),
 });
 
 const zipFileName = "fah-scripts";

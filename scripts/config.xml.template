@@ -34,7 +34,9 @@
       <slot id="1" type="GPU"/>
 
     All slots in a configuration MUST have unique ids.
-   -->
+  -->
+  <slot id="0" type="CPU"/>
+  <slot id="1" type="GPU"/>
 
   <!-- Granting Remote FAHControl Access
     To grant remote access to FAHControl and the remote command server add
