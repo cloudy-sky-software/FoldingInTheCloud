@@ -28,11 +28,13 @@ else
     install_fah_client
 fi
 
+IS_ACTIVE=$(systemctl is-active FAHClient)
+if [ "${IS_ACTIVE}" = "active" ]; then
+    sudo /etc/init.d/FAHClient stop
+fi
+
 sudo cp ~/config.xml /etc/fahclient/config.xml
 
->/dev/null 2>/dev/null systemctl is-active --quiet FAHClient || {
-    echo "Starting FAHClient service..."
-    sudo /etc/init.d/FAHClient start || exit 1
-}
+sudo /etc/init.d/FAHClient start || exit 1
 
 echo "Done."
