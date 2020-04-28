@@ -4,7 +4,7 @@ import * as aws from "@pulumi/aws";
 import { Context } from "@pulumi/aws/lambda";
 
 import * as sshpk from "sshpk";
-import { generateKeyPair } from "crypto";
+import { generateKeyPair, RSAKeyPairOptions } from "crypto";
 
 import {
     sendSSHPublicKeyToInstance,
@@ -105,19 +105,20 @@ export class EventsHandler extends pulumi.ComponentResource {
                     throw new Error("Got an unknown instance from Spot request.");
                 }
 
+                const keypairSettings: RSAKeyPairOptions<"pem", "pem"> = {
+                    modulusLength: 4096,
+                    publicKeyEncoding: {
+                        type: "spki",
+                        format: "pem"
+                    },
+                    privateKeyEncoding: {
+                        type: "pkcs1",
+                        format: "pem",
+                    }
+                };
                 if (e.hasOwnProperty("source") && e.source === "aws.ec2" && e.detail["instance-action"] === "terminate") {
                     const p = new Promise((resolve, reject) => {
-                        generateKeyPair("rsa", {
-                            modulusLength: 4096,
-                            publicKeyEncoding: {
-                                type: "spki",
-                                format: "pem"
-                            },
-                            privateKeyEncoding: {
-                                type: "pkcs1",
-                                format: "pem",
-                            }
-                        }, async (err: any, publicKey: string, privateKey: string) => {
+                        generateKeyPair("rsa", keypairSettings, async (err: any, publicKey: string, privateKey: string) => {
                             if (err) {
                                 reject(err);
                                 return;
@@ -136,17 +137,7 @@ export class EventsHandler extends pulumi.ComponentResource {
 
                 await downloadS3Object(bucketName, zipFilename);
                 const p = new Promise((resolve, reject) => {
-                    generateKeyPair("rsa", {
-                        modulusLength: 4096,
-                        publicKeyEncoding: {
-                            type: "spki",
-                            format: "pem"
-                        },
-                        privateKeyEncoding: {
-                            type: "pkcs1",
-                            format: "pem",
-                        }
-                    }, async (err: any, publicKey: string, privateKey: string) => {
+                    generateKeyPair("rsa", keypairSettings, async (err: any, publicKey: string, privateKey: string) => {
                         if (err) {
                             reject(err);
                             return;
