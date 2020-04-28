@@ -39,10 +39,6 @@ export class LambdaProvisioner extends pulumi.ComponentResource {
 
             this.args.bucket.onObjectCreated("fah-object-created", this.callbackFunction);
 
-            this.registerOutputs({
-                serverlessFunction: this.callbackFunction,
-            });
-
             const eventRule = new aws.cloudwatch.EventRule(`${this.name}-fulfilled-event`, {
                 description: "Event rule for Spot Instance request fulfillment.",
                 eventPattern: JSON.stringify({
@@ -55,6 +51,10 @@ export class LambdaProvisioner extends pulumi.ComponentResource {
             }, { parent: this });
 
             eventRule.onEvent(`${this.name}-event-invocation`, this.callbackFunction, undefined, { parent: this });
+
+            this.registerOutputs({
+                serverlessFunction: this.callbackFunction,
+            });
         });
     }
 
