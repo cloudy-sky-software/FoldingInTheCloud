@@ -5,4 +5,6 @@
     exit 0
 }
 
+echo "Finishing FAHClient..."
 FAHClient --finish
+echo "Done"

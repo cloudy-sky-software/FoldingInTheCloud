@@ -6,9 +6,9 @@ import * as ssh2 from "ssh2";
 import { ParsedKey } from "ssh2-streams";
 
 import { SpotInstance } from "./aws/ec2";
-import { LambdaProvisioner } from "./aws/lambdaProvisioner";
 import { execSync } from "child_process";
 import { registerDefaultTags } from "./tags";
+import { Events } from "./aws/events";
 
 // Get the config ready to go.
 const config = new pulumi.Config();
@@ -105,9 +105,9 @@ export const bucketArn = bucket.arn;
 export const spotRequestId = spotInstance.spotRequest?.id;
 
 if (spotInstance && spotInstance.spotRequest) {
-    const lambdaProvisioner = new LambdaProvisioner("fah", {
-        bucket: bucket,
-        spotInstanceRequestId: spotInstance.spotRequest.id,
-        zipFilename: zipFileName,
+    const events = new Events("fah", {
+        spotInstanceRequest: spotInstance.spotRequest,
+        bucket,
+        zipFileName,
     }, { dependsOn: spotInstance });
 }
