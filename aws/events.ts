@@ -48,6 +48,8 @@ export class Events extends pulumi.ComponentResource {
             }, { parent: this });
 
             eventRule.onEvent(`${name}-interruption-sub`, handler.callbackFunction, undefined, { parent: this });
+
+            this.registerOutputs({});
         });
     }
 }
