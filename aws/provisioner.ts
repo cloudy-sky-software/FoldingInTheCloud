@@ -108,6 +108,10 @@ export async function sendSSHPublicKeyToInstance(instance: Instance, publicKey: 
     console.log("SSH public key sent.");
 }
 
+function getScheduledEventRuleName(spotInstanceRequestId: string): string {
+    return `${SCHEDULED_EVENT_NAME_PREFIX}_${spotInstanceRequestId}`;
+}
+
 async function checkAndCreateScheduledEvent(spotInstanceRequestId: string) {
     const cw = new aws.sdk.CloudWatchEvents({
         region: AWS_REGION,
@@ -115,7 +119,7 @@ async function checkAndCreateScheduledEvent(spotInstanceRequestId: string) {
     let result;
     try {
         result = await cw.describeRule({
-            Name: `${SCHEDULED_EVENT_NAME_PREFIX}_${spotInstanceRequestId}`,
+            Name: getScheduledEventRuleName(spotInstanceRequestId),
         }).promise();
         if (result.$response.httpResponse.statusCode === 200) {
             console.log(`Scheduled event ${SCHEDULED_EVENT_NAME_PREFIX} already exists. Won't re-create it.`);
@@ -146,7 +150,7 @@ async function deleteScheduledEvent(spotInstanceRequestId: string) {
     let result;
     try {
         result = await cw.deleteRule({
-            Name: `${SCHEDULED_EVENT_NAME_PREFIX}_${spotInstanceRequestId}`,
+            Name: getScheduledEventRuleName(spotInstanceRequestId),
         }).promise();
     } catch (err) {
         // If the error is anything but a 404, re-throw it. Otherwise, ignore it.

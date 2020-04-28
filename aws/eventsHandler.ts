@@ -64,11 +64,12 @@ export class EventsHandler extends pulumi.ComponentResource {
             Statement: [
                 {
                     Effect: "Allow",
+                    Action: aws.iam.ManagedPolicies.AWSLambdaBasicExecutionRole,
+                    Resource: "*",
+                },
+                {
+                    Effect: "Allow",
                     Action: [
-                        "logs:CreateLogGroup",
-                        "logs:CreateLogStream",
-                        "logs:PutLogEvents",
-
                         "events:DescribeRule",
                         "events:PutRule",
                         "events:DeleteRule",
