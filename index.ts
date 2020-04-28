@@ -105,7 +105,7 @@ export const bucketArn = bucket.arn;
 export const spotRequestId = spotInstance.spotRequest?.id;
 
 if (spotInstance && spotInstance.spotRequest) {
-    const events = new Events("fah", {
+    const events = new Events("fah-events", {
         spotInstanceRequest: spotInstance.spotRequest,
         bucket,
         zipFileName,
