@@ -55,18 +55,18 @@ jobs:
       run: |
         echo "::set-output name=stackOutput::$(pulumi stack output)"
 
-    - run: pulumi preview
+    - run: pulumi preview -s dev
       if: github.event_name == 'pull_request'
 
     # Always run an update for a push build, IFF the stack already has resources.
-    - run: pulumi up --yes
+    - run: pulumi up --yes -s dev
       if: github.event_name == 'push' && ${{ fromJson(steps.set-stack-output.outputs.stackOutput).bucketArn }} != ''
       
     # If this is a scheduled execution, and it is a Saturday, run the update to create the resources.
-    - run: pulumi up --yes
+    - run: pulumi up --yes -s dev
       if: github.event_name == 'schedule' && ${{ steps.current-time.outputs.formattedTime }} == 'Sat'
     
     # If this is a scheduled execution, and it is a Monday, destroy the resources.
-    - run: pulumi destroy --yes
+    - run: pulumi destroy --yes -s dev
       if: github.event_name == 'schedule' && ${{ steps.current-time.outputs.formattedTime }} == 'Mon'
     
