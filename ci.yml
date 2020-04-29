@@ -1,0 +1,65 @@
+# This workflow will do a clean install of node dependencies, build the source code and run tests across different versions of node
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-nodejs-with-github-actions
+
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+
+  pull_request:
+    branches: [ master ]
+
+  schedule:
+    # * is a special character in YAML so you have to quote this string.
+    # Run every Saturday and Monday at 9AM UTC.
+    - cron:  '0 9 * * Sat,Mon'
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Get current time
+      uses: srfrnk/current-time@master
+      id: current-time
+      with:
+        # Get the day of week as Sat, Sun, Mon etc.
+        # This action uses MomentJS style syntax.
+        format: ddd
+
+    # Turnstyle is used to prevent multiple push jobs from
+    # running at the same time.
+    - name: Turnstyle
+      uses: softprops/turnstyle@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - uses: actions/checkout@v2
+
+    - name: Use Node.js
+      uses: actions/setup-node@v1
+      with:
+        node-version: 12.x
+
+    - name: Install Pulumi CLI
+      uses: pulumi/action-install-pulumi-cli@releases/v1
+
+    - run: export STACK_OUTPUT=$(pulumi stack output)
+
+    - run: pulumi preview
+      if: github.event_name == 'pull_request'
+
+    # Always run an update for a push build, IFF the stack already has resources.
+    - run: pulumi up --yes
+      if: github.event_name == 'push' && ${{ fromJson($STACK_OUTPUT).bucketArn }} != ''
+      
+    # If this is a scheduled execution, and it is a Saturday, run the update to create the resources.
+    - run: pulumi up --yes
+      if: github.event_name == 'schedule' && ${{ steps.current-time.outputs.formattedTime }} == 'Sat'
+    
+    # If this is a scheduled execution, and it is a Monday, destroy the resources.
+    - run: pulumi destroy --yes
+      if: github.event_name == 'schedule' && ${{ steps.current-time.outputs.formattedTime }} == 'Mon'
+    
