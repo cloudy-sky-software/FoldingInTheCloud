@@ -46,6 +46,8 @@ jobs:
     - name: Install Pulumi CLI
       uses: pulumi/action-install-pulumi-cli@releases/v1
 
+    - run: npm ci
+
     - run: export STACK_OUTPUT=$(pulumi stack output)
 
     - run: pulumi preview
