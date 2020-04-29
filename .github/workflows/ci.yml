@@ -21,6 +21,7 @@ jobs:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+      PULUMI_STACK_NAME: dev
     runs-on: ubuntu-latest
 
     steps:
@@ -53,20 +54,20 @@ jobs:
 
     - id: set-stack-output
       run: |
-        echo "::set-output name=stackOutput::$(pulumi stack output)"
+        echo "::set-output name=stackOutput::$(pulumi stack output --json)"
 
-    - run: pulumi preview -s dev
+    - run: pulumi preview -s ${PULUMI_STACK_NAME}
       if: github.event_name == 'pull_request'
 
     # Always run an update for a push build, IFF the stack already has resources.
-    - run: pulumi up --yes -s dev
+    - run: pulumi up --yes -s ${PULUMI_STACK_NAME}
       if: github.event_name == 'push' && ${{ fromJson(steps.set-stack-output.outputs.stackOutput).bucketArn }} != ''
       
     # If this is a scheduled execution, and it is a Saturday, run the update to create the resources.
-    - run: pulumi up --yes -s dev
+    - run: pulumi up --yes -s ${PULUMI_STACK_NAME}
       if: github.event_name == 'schedule' && ${{ steps.current-time.outputs.formattedTime }} == 'Sat'
     
     # If this is a scheduled execution, and it is a Monday, destroy the resources.
-    - run: pulumi destroy --yes -s dev
+    - run: pulumi destroy --yes -s ${PULUMI_STACK_NAME}
       if: github.event_name == 'schedule' && ${{ steps.current-time.outputs.formattedTime }} == 'Mon'
     
