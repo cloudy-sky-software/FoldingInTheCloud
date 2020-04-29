@@ -64,11 +64,6 @@ export class EventsHandler extends pulumi.ComponentResource {
             Statement: [
                 {
                     Effect: "Allow",
-                    Action: aws.iam.ManagedPolicies.AWSLambdaBasicExecutionRole,
-                    Resource: "*",
-                },
-                {
-                    Effect: "Allow",
                     Action: [
                         "events:DescribeRule",
                         "events:PutRule",
@@ -85,13 +80,18 @@ export class EventsHandler extends pulumi.ComponentResource {
             ],
         };
         const iamPolicy = new aws.iam.Policy(`${this.name}-lambda-pol`, {
-            description: "IAM policy for Lambda execution.",
+            description: "Custom IAM policy for Lambda execution.",
             policy: JSON.stringify(rolePolicyDoc),
         }, { parent: this });
 
         new aws.iam.RolePolicyAttachment(`${this.name}-lambda-attach-pol`, {
             role: this.role,
             policyArn: iamPolicy.arn,
+        }, { parent: this });
+
+        new aws.iam.RolePolicyAttachment(`${this.name}-lambda-attach-pol`, {
+            role: this.role,
+            policyArn: aws.iam.ManagedPolicies.AWSLambdaBasicExecutionRole,
         }, { parent: this });
     }
 
