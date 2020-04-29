@@ -32,7 +32,7 @@ pulumi.all([privateKey, privateKeyPassphrase]).apply(([prKey, pass]) => {
 const fahPassKey = config.requireSecret("fahPassKey");
 const fahUsername = config.require("fahUsername");
 const fahRemoteControlPass = config.requireSecret("fahRemoteControlPass");
-const fahAllowedIP = config.get("fahAllowedIP") || "";
+const fahAllowedIP = config.getSecret("fahAllowedIP") || "";
 
 // Transform the FAH config.xml with the stack config properties provided by the user.
 pulumi.all([fahUsername, fahPassKey, fahRemoteControlPass, fahAllowedIP]).apply(async ([un, pk, rcPass, allowedIP]) => {
