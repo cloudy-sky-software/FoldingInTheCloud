@@ -84,12 +84,12 @@ export class EventsHandler extends pulumi.ComponentResource {
             policy: JSON.stringify(rolePolicyDoc),
         }, { parent: this });
 
-        new aws.iam.RolePolicyAttachment(`${this.name}-lambda-attach-pol`, {
+        new aws.iam.RolePolicyAttachment(`${this.name}-lambda-attach-pol1`, {
             role: this.role,
             policyArn: iamPolicy.arn,
         }, { parent: this });
 
-        new aws.iam.RolePolicyAttachment(`${this.name}-lambda-attach-pol`, {
+        new aws.iam.RolePolicyAttachment(`${this.name}-lambda-attach-pol2`, {
             role: this.role,
             policyArn: aws.iam.ManagedPolicies.AWSLambdaBasicExecutionRole,
         }, { parent: this });
