@@ -32,9 +32,10 @@ pulumi.all([privateKey, privateKeyPassphrase]).apply(([prKey, pass]) => {
 const fahPassKey = config.requireSecret("fahPassKey");
 const fahUsername = config.require("fahUsername");
 const fahRemoteControlPass = config.requireSecret("fahRemoteControlPass");
+const fahAllowedIP = config.get("fahAllowedIP") || "";
 
 // Transform the FAH config.xml with the stack config properties provided by the user.
-pulumi.all([fahUsername, fahPassKey, fahRemoteControlPass]).apply(async ([un, pk, rcPass]) => {
+pulumi.all([fahUsername, fahPassKey, fahRemoteControlPass, fahAllowedIP]).apply(async ([un, pk, rcPass, allowedIP]) => {
     const execLocal = (cmd: string) => {
         execSync(cmd, {
             cwd: "./scripts",
@@ -46,10 +47,12 @@ pulumi.all([fahUsername, fahPassKey, fahRemoteControlPass]).apply(async ([un, pk
     execLocal(`sed -i 's/{{PassKey}}/${pk}/g' config.xml`);
     execLocal(`sed -i 's/{{RemoteControlPass}}/${rcPass}/g' config.xml`);
 
-    // Find this machine's IP as seen by the internet.
-    const resp = await axios.default.get<string>("https://ipecho.net/plain");
-    pulumi.log.info(`Setting FAH remote control client IP to ${resp.data}`);
-    execLocal(`sed -i 's/{{AllowedIP}}/${resp.data}/g' config.xml`);
+    if (!allowedIP) {
+        pulumi.log.warn("No whitelist ip provided for FAHClient remote control. " +
+            "Set fahAllowedIP to whitelist your" +
+            "machine to remotely control the FAHClient on the instance.")
+    }
+    execLocal(`sed -i 's/{{AllowedIP}}/${allowedIP}/g' config.xml`);
     pulumi.log.info("Updated config.xml");
 });
 
