@@ -64,10 +64,10 @@ jobs:
       if: github.event_name == 'push' && steps.set-stack-output.outputs.stackOutput != '{}'
       
     # If this is a scheduled execution, and it is a Saturday, run the update to create the resources.
-    # - run: pulumi up --yes -s ${PULUMI_STACK_NAME}
-      # if: github.event_name == 'schedule' && steps.current-time.outputs.formattedTime == 'Sat'
+    - run: pulumi up --yes -s invalid
+      if: github.event_name == 'schedule' && steps.current-time.outputs.formattedTime == 'Sat'
     
     # If this is a scheduled execution, and it is a Monday, destroy the resources.
-    # - run: pulumi destroy --yes -s ${PULUMI_STACK_NAME}
-      # if: github.event_name == 'schedule' && steps.current-time.outputs.formattedTime == 'Mon'
+    - run: pulumi destroy --yes -s invalid
+      if: github.event_name == 'schedule' && steps.current-time.outputs.formattedTime == 'Mon'
     
