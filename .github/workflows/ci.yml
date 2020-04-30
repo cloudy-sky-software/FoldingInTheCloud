@@ -68,6 +68,17 @@ jobs:
       if: github.event_name == 'schedule' && steps.current-time.outputs.formattedTime == 'Sat'
     
     # If this is a scheduled execution, and it is a Monday, destroy the resources.
-    - run: pulumi destroy --yes -s ${PULUMI_STACK_NAME}
+    - run: |
+        # First terminate the EC2 instance that fulfilled the Spot Instance Request (SIR).
+        # To do that, we should first query for the instance ID from the SIR.
+        SIR_ID=$(pulumi stack output spotRequestId -s "${PULUMI_STACK_NAME}")
+        DESCRIBE_SIR=$(aws ec2 describe-spot-instance-requests --spot-instance-request-ids "${SIR_ID}")
+        INSTANCE_ID=$(${DESCRIBE_SIR} | jq '.SpotInstanceRequests[0].InstanceId' -c -r)
+
+        # Finally terminate the instance.
+        echo "Terminating the instance ${INSTANCE_ID}"
+        aws ec2 terminate-instances --instance-ids "${INSTANCE_ID}"
+
+        pulumi destroy --yes -s ${PULUMI_STACK_NAME}
       if: github.event_name == 'schedule' && steps.current-time.outputs.formattedTime == 'Mon'
     
