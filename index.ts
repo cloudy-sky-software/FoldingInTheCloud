@@ -32,7 +32,7 @@ pulumi.all([privateKey, privateKeyPassphrase]).apply(([prKey, pass]) => {
 const fahPassKey = config.requireSecret("fahPassKey");
 const fahUsername = config.require("fahUsername");
 const fahRemoteControlPass = config.requireSecret("fahRemoteControlPass");
-const fahAllowedIP = config.getSecret("fahAllowedIP") || "";
+const fahAllowedIP = config.requireSecret("fahAllowedIP");
 
 // Transform the FAH config.xml with the stack config properties provided by the user.
 pulumi.all([fahUsername, fahPassKey, fahRemoteControlPass, fahAllowedIP]).apply(async ([un, pk, rcPass, allowedIP]) => {
@@ -46,12 +46,6 @@ pulumi.all([fahUsername, fahPassKey, fahRemoteControlPass, fahAllowedIP]).apply(
     execLocal(`sed -i 's/{{Username}}/${un}/g' config.xml`);
     execLocal(`sed -i 's/{{PassKey}}/${pk}/g' config.xml`);
     execLocal(`sed -i 's/{{RemoteControlPass}}/${rcPass}/g' config.xml`);
-
-    if (!allowedIP) {
-        pulumi.log.warn("No whitelist ip provided for FAHClient remote control. " +
-            "Set fahAllowedIP to whitelist your" +
-            "machine to remotely control the FAHClient on the instance.")
-    }
     execLocal(`sed -i 's/{{AllowedIP}}/${allowedIP}/g' config.xml`);
     pulumi.log.info("Updated config.xml");
 });
@@ -102,6 +96,14 @@ const spotInstance = new SpotInstance("fah-linux", {
     privateKey,
     publicKey,
     privateKeyPassphrase,
+
+    /**
+     * Allow only the provided IP address as the source IP address for the Spot Instance.
+     *
+     * Learn the basics of IP address ranges and how to calculate CIDR blocks here:
+     * https://s3.amazonaws.com/tr-learncanvas/docs/IP_Filtering_in_Canvas.pdf
+     */
+    whitelistedAdminCIDBlocks: [pulumi.interpolate`${fahAllowedIP}/32`]
 }, { dependsOn: bucketObject });
 
 export const bucketArn = bucket.arn;
@@ -109,6 +111,7 @@ export const spotRequestId = spotInstance.spotRequest?.id;
 
 if (spotInstance && spotInstance.spotRequest) {
     const events = new Events("fah-events", {
+        ec2Security: spotInstance.ec2Security,
         spotInstanceRequest: spotInstance.spotRequest,
         bucket,
         zipFileName,

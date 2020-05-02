@@ -3,16 +3,22 @@ import * as aws from "@pulumi/aws";
 
 import { getAwsAz } from "../utils";
 
+export interface Ec2InstanceSecurityArgs {
+    securityGroupSourceCIDRBlocks: pulumi.Input<string>[];
+}
+
 export class Ec2InstanceSecurity extends pulumi.ComponentResource {
     private name: string;
+    private args: Ec2InstanceSecurityArgs;
 
     public instanceProfile: aws.iam.InstanceProfile | undefined;
     public subnet: aws.ec2.Subnet | undefined;
     public securityGroup: aws.ec2.SecurityGroup | undefined;
 
-    constructor(name: string, opts?: pulumi.ComponentResourceOptions) {
+    constructor(name: string, args: Ec2InstanceSecurityArgs, opts?: pulumi.ComponentResourceOptions) {
         super("spotInstance:ec2:security", name, undefined, opts);
         this.name = name;
+        this.args = args;
 
         this.setupIdentities();
         this.setupPrivateNetworking();
@@ -68,10 +74,12 @@ export class Ec2InstanceSecurity extends pulumi.ComponentResource {
 
     private getIngressRules(): aws.types.input.ec2.SecurityGroupIngress[] {
         return [
-            // For SSH access to the instance.
-            { protocol: "tcp", fromPort: 22, toPort: 22, cidrBlocks: ["0.0.0.0/0"] },
-            // For FAHControl application to be control the FAHClient on the EC2 instance.
-            { protocol: "tcp", fromPort: 36330, toPort: 36330, cidrBlocks: ["0.0.0.0/0"] }
+            // For SSH access to the instance from resources within the security group.
+            { protocol: "tcp", fromPort: 22, toPort: 22, self: true, },
+            // For SSH access to the instance from the remote IP.
+            { protocol: "tcp", fromPort: 22, toPort: 22, cidrBlocks: this.args.securityGroupSourceCIDRBlocks },
+            // To allow FAHControl on a remote IP to be able to connect to/control the FAHClient on the EC2 instance.
+            { protocol: "tcp", fromPort: 36330, toPort: 36330, cidrBlocks: this.args.securityGroupSourceCIDRBlocks }
         ];
     }
 
@@ -83,6 +91,7 @@ export class Ec2InstanceSecurity extends pulumi.ComponentResource {
 
         this.subnet = new aws.ec2.Subnet(`${this.name}-subnet`, {
             vpcId: vpc.id,
+            // We will also use this subnet to deploy Lambda resources.
             cidrBlock: "10.10.0.0/24",
             availabilityZone: pulumi.output(getAwsAz(0)),
             mapPublicIpOnLaunch: true,

@@ -13,8 +13,10 @@ import {
     provisionInstance,
     runShutdownScript
 } from "./provisioner";
+import { Ec2InstanceSecurity } from "./security";
 
 export interface LambdaProvisionerArgs {
+    ec2Security: Ec2InstanceSecurity;
     spotInstanceRequestId: string;
     bucketName: string;
     zipFilename: string;
@@ -158,6 +160,11 @@ export class EventsHandler extends pulumi.ComponentResource {
             memorySize: 128, // MB
             timeout: 800, // Seconds
             runtime: aws.lambda.NodeJS12dXRuntime,
+            vpcConfig: {
+                subnetIds: [this.args.ec2Security.subnet?.id!],
+                securityGroupIds: [this.args.ec2Security.securityGroup?.id!],
+                vpcId: this.args.ec2Security.subnet?.vpcId!,
+            }
         }, { parent: this });
     }
 }
