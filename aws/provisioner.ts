@@ -49,6 +49,7 @@ export async function getSpotInstance(spotRequestId: string): Promise<Instance> 
         region: AWS_REGION,
     });
 
+    console.log("Verifying if spot instance request is fulfilled...");
     await ec2.waitFor("spotInstanceRequestFulfilled", {
         $waiter: {
             maxAttempts: 20,
@@ -57,6 +58,7 @@ export async function getSpotInstance(spotRequestId: string): Promise<Instance> 
         SpotInstanceRequestIds: [spotRequestId]
     }).promise();
 
+    console.log("Getting fulfilled spot instance request info...")
     const latestSpotRequest = await ec2.describeSpotInstanceRequests({
         SpotInstanceRequestIds: [spotRequestId]
     }).promise();
@@ -70,6 +72,7 @@ export async function getSpotInstance(spotRequestId: string): Promise<Instance> 
         throw new Error("InstanceId is undefined. Spot instance request has not been fulfilled yet.");
     }
 
+    console.log("Waiting for instance state to be in running state...");
     await ec2.waitFor("instanceRunning", {
         $waiter: {
             maxAttempts: 20,
@@ -78,6 +81,7 @@ export async function getSpotInstance(spotRequestId: string): Promise<Instance> 
         InstanceIds: [instanceId]
     }).promise();
 
+    console.log("Getting instance info...")
     const describeInstanceResponse = await ec2.describeInstances({
         InstanceIds: [instanceId],
     }).promise();
