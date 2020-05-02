@@ -72,6 +72,8 @@ export class EventsHandler extends pulumi.ComponentResource {
                         "events:DescribeRule",
                         "events:PutRule",
                         "events:DeleteRule",
+                        "events:PutTargets",
+                        "events:RemoveTargets",
 
                         // Network interface actions to allow Lambda to bind to an available
                         // interface within the VPC.
@@ -159,7 +161,7 @@ export class EventsHandler extends pulumi.ComponentResource {
                         // Convert the public to an OpenSSH public key format.
                         const sshPublicKey = sshpk.parseKey(publicKey, "pem").toString("ssh");
                         await sendSSHPublicKeyToInstance(instance, sshPublicKey);
-                        await provisionInstance(spotInstanceRequestId, instance.PublicIpAddress!, privateKey);
+                        await provisionInstance(ctx, spotInstanceRequestId, instance.PublicIpAddress!, privateKey);
                         console.log("All done!");
                         resolve();
                     });

@@ -1,4 +1,5 @@
 import * as aws from "@pulumi/aws";
+import { Context } from "@pulumi/aws/lambda";
 
 import { DescribeSpotInstanceRequestsResult, DescribeInstancesResult, Instance } from "aws-sdk/clients/ec2";
 import * as unzipper from "unzipper";
@@ -112,7 +113,7 @@ function getScheduledEventRuleName(spotInstanceRequestId: string): string {
     return `${SCHEDULED_EVENT_NAME_PREFIX}_${spotInstanceRequestId}`;
 }
 
-async function checkAndCreateScheduledEvent(spotInstanceRequestId: string) {
+async function checkAndCreateScheduledEvent(ctx: Context, spotInstanceRequestId: string) {
     const cw = new aws.sdk.CloudWatchEvents({
         region: AWS_REGION,
     });
@@ -135,22 +136,34 @@ async function checkAndCreateScheduledEvent(spotInstanceRequestId: string) {
         }
     }
 
-    await cw.putRule({
+    const rule = await cw.putRule({
         Name: `${SCHEDULED_EVENT_NAME_PREFIX}_${spotInstanceRequestId}`,
         Description: "Scheduled Event to provision an EC2 spot instance until it succeeds. This is a temporary event and will be deleted.",
         ScheduleExpression: "rate(15 minutes)",
     }).promise();
+    await cw.putTargets({
+        Rule: rule.RuleArn!,
+        Targets: [{
+            Arn: ctx.invokedFunctionArn,
+            Id: ctx.functionName,
+        }],
+    }).promise();
 }
 
-async function deleteScheduledEvent(spotInstanceRequestId: string) {
+async function deleteScheduledEvent(ctx: Context, spotInstanceRequestId: string) {
     const cw = new aws.sdk.CloudWatchEvents({
         region: AWS_REGION,
     });
 
+    const ruleName = getScheduledEventRuleName(spotInstanceRequestId);
     let result;
     try {
         result = await cw.deleteRule({
-            Name: getScheduledEventRuleName(spotInstanceRequestId),
+            Name: ruleName,
+        }).promise();
+        await cw.removeTargets({
+            Rule: ruleName,
+            Ids: [ctx.functionName]
         }).promise();
     } catch (err) {
         // If the error is anything but a 404, re-throw it. Otherwise, ignore it.
@@ -160,7 +173,7 @@ async function deleteScheduledEvent(spotInstanceRequestId: string) {
     }
 }
 
-export async function provisionInstance(spotInstanceRequestId: string, instancePublicIp: string, sshPrivateKey: string) {
+export async function provisionInstance(ctx: Context, spotInstanceRequestId: string, instancePublicIp: string, sshPrivateKey: string) {
     const conn: ConnectionArgs = {
         type: "ssh",
         host: instancePublicIp,
@@ -169,7 +182,7 @@ export async function provisionInstance(spotInstanceRequestId: string, instanceP
     };
 
     try {
-        await checkAndCreateScheduledEvent(spotInstanceRequestId);
+        await checkAndCreateScheduledEvent(ctx, spotInstanceRequestId);
         console.log(`Copying files to the instance ${instancePublicIp}...`);
         // Copy the files to the EC2 instance.
         await copyFile(conn, LOCAL_SCRIPTS_PATH, LINUX_USER_SCRIPTS_DIR);
@@ -187,7 +200,7 @@ export async function provisionInstance(spotInstanceRequestId: string, instanceP
     for (const cmd of commands) {
         await runCommand(conn, cmd);
     }
-    await deleteScheduledEvent(spotInstanceRequestId);
+    await deleteScheduledEvent(ctx, spotInstanceRequestId);
 }
 
 export async function runShutdownScript(instancePublicIp: string, sshPrivateKey: string) {
