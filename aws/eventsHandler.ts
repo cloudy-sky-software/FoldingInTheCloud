@@ -75,12 +75,6 @@ export class EventsHandler extends pulumi.ComponentResource {
                         "events:PutTargets",
                         "events:RemoveTargets",
 
-                        // Network interface actions to allow Lambda to bind to an available
-                        // interface within the VPC.
-                        "ec2:CreateNetworkInterface",
-                        "ec2:DeleteNetworkInterface",
-                        "ec2:DescribeNetworkInterfaces",
-
                         "ec2:DescribeSpotInstanceRequests",
                         "ec2:DescribeInstances",
                         // To use EC2 Instance Connect to perform provisioning actions via SSH.
@@ -103,9 +97,11 @@ export class EventsHandler extends pulumi.ComponentResource {
             policyArn: iamPolicy.arn,
         }, { parent: this });
 
+        // Network interface actions to allow Lambda to bind to an available
+        // interface within the VPC.
         new aws.iam.RolePolicyAttachment(`${this.name}-lambda-attach-pol2`, {
             role: this.role,
-            policyArn: aws.iam.ManagedPolicies.AWSLambdaBasicExecutionRole,
+            policyArn: aws.iam.ManagedPolicies.AWSLambdaVPCAccessExecutionRole,
         }, { parent: this });
     }
 
