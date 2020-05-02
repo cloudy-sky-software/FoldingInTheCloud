@@ -11,6 +11,7 @@
     "dependencies": {
         "@pulumi/aws": "^2.2.0",
         "@pulumi/awsx": "^0.20.0",
+        "@pulumi/azure": "^3.4.0",
         "@pulumi/pulumi": "^2.0.0",
         "axios": "^0.19.2",
         "scp2": "github:spmjs/node-scp2#master",
