@@ -185,17 +185,17 @@ async function deleteScheduledEvent(ctx: Context, spotInstanceRequestId: string)
     }
 }
 
-export async function provisionInstance(ctx: Context, spotInstanceRequestId: string, instancePublicIp: string, sshPrivateKey: string) {
+export async function provisionInstance(ctx: Context, spotInstanceRequestId: string, instancePrivateOrPublicIp: string, sshPrivateKey: string) {
     const conn: ConnectionArgs = {
         type: "ssh",
-        host: instancePublicIp,
+        host: instancePrivateOrPublicIp,
         username: INSTANCE_USER,
         privateKey: sshPrivateKey,
     };
 
     try {
         await checkAndCreateScheduledEvent(ctx, spotInstanceRequestId);
-        console.log(`Copying files to the instance ${instancePublicIp}...`);
+        console.log(`Copying files to the instance ${instancePrivateOrPublicIp}...`);
         // Copy the files to the EC2 instance.
         await copyFile(conn, LOCAL_SCRIPTS_PATH, LINUX_USER_SCRIPTS_DIR);
     } catch (err) {
@@ -215,10 +215,10 @@ export async function provisionInstance(ctx: Context, spotInstanceRequestId: str
     await deleteScheduledEvent(ctx, spotInstanceRequestId);
 }
 
-export async function runShutdownScript(ctx: Context, spotInstanceRequestId: string, instancePublicIp: string, sshPrivateKey: string) {
+export async function runShutdownScript(ctx: Context, spotInstanceRequestId: string, instancePrivateOrPublicIp: string, sshPrivateKey: string) {
     const conn: ConnectionArgs = {
         type: "ssh",
-        host: instancePublicIp,
+        host: instancePrivateOrPublicIp,
         username: INSTANCE_USER,
         privateKey: sshPrivateKey,
     };

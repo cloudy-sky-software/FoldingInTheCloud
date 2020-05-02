@@ -138,7 +138,7 @@ export class EventsHandler extends pulumi.ComponentResource {
                             // Convert the public to an OpenSSH public key format.
                             const sshPublicKey = sshpk.parseKey(publicKey, "pem").toString("ssh");
                             await sendSSHPublicKeyToInstance(instance, sshPublicKey);
-                            await runShutdownScript(ctx, spotInstanceRequestId, instance.PublicIpAddress!, privateKey);
+                            await runShutdownScript(ctx, spotInstanceRequestId, instance.PrivateIpAddress!, privateKey);
                             console.log("All done!");
                             resolve();
                         });
@@ -157,7 +157,7 @@ export class EventsHandler extends pulumi.ComponentResource {
                         // Convert the public to an OpenSSH public key format.
                         const sshPublicKey = sshpk.parseKey(publicKey, "pem").toString("ssh");
                         await sendSSHPublicKeyToInstance(instance, sshPublicKey);
-                        await provisionInstance(ctx, spotInstanceRequestId, instance.PublicIpAddress!, privateKey);
+                        await provisionInstance(ctx, spotInstanceRequestId, instance.PrivateIpAddress!, privateKey);
                         console.log("All done!");
                         resolve();
                     });
