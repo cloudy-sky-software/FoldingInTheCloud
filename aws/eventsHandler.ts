@@ -163,7 +163,6 @@ export class EventsHandler extends pulumi.ComponentResource {
             vpcConfig: {
                 subnetIds: [this.args.ec2Security.subnet?.id!],
                 securityGroupIds: [this.args.ec2Security.securityGroup?.id!],
-                vpcId: this.args.ec2Security.subnet?.vpcId!,
             }
         }, { parent: this });
     }
