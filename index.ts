@@ -64,14 +64,6 @@ const bucket = new aws.s3.Bucket("fah-bucket", {
     },
 });
 
-const zipFileName = "fah-scripts";
-const bucketObject = new aws.s3.BucketObject("fah-scripts", {
-    bucket: bucket,
-    key: zipFileName,
-    serverSideEncryption: "AES256",
-    source: new pulumi.asset.FileArchive("./scripts")
-});
-
 const spotInstance = new SpotInstance("fah-linux", {
     /**
      * When picking an instance type, be sure to also pick a region
@@ -98,21 +90,29 @@ const spotInstance = new SpotInstance("fah-linux", {
     privateKeyPassphrase,
 
     ingressRules: [
-        // For SSH access to the instance from the remote IP.
-        { protocol: "tcp", fromPort: 22, toPort: 22, cidrBlocks: [pulumi.interpolate`${fahAllowedIP}/32`] },
+        // For SSH access to the instance.
+        { protocol: "tcp", fromPort: 22, toPort: 22, cidrBlocks: ["0.0.0.0/0"] },
         // To allow FAHControl on a remote IP to be able to connect to/control the FAHClient on the EC2 instance.
         { protocol: "tcp", fromPort: 36330, toPort: 36330, cidrBlocks: [pulumi.interpolate`${fahAllowedIP}/32`] }
     ],
-}, { dependsOn: bucketObject });
+}, { dependsOn: bucket });
 
 export const bucketArn = bucket.arn;
 export const spotRequestId = spotInstance.spotRequest?.id;
 
 if (spotInstance && spotInstance.spotRequest) {
+    const zipFileName = "fah-scripts";
     const events = new Events("fah-events", {
         ec2Security: spotInstance.ec2Security,
         spotInstanceRequest: spotInstance.spotRequest,
         bucket,
         zipFileName,
     }, { dependsOn: spotInstance });
+
+    const bucketObject = new aws.s3.BucketObject("fah-scripts", {
+        bucket: bucket,
+        key: zipFileName,
+        serverSideEncryption: "AES256",
+        source: new pulumi.asset.FileArchive("./scripts")
+    });
 }

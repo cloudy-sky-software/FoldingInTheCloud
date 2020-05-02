@@ -73,15 +73,6 @@ export class Ec2InstanceSecurity extends pulumi.ComponentResource {
         }, { parent: this });
     }
 
-    private getIngressRules(): aws.types.input.ec2.SecurityGroupIngress[] {
-        return [
-            // For SSH access to the instance from resources within the security group.
-            { protocol: "tcp", fromPort: 22, toPort: 22, self: true, },
-
-            ...this.args.securityGroupIngressRules,
-        ];
-    }
-
     private setupPrivateSubnet(vpc: aws.ec2.Vpc) {
         if (!this.privateSubnet || !this.publicSubnet) {
             return;
@@ -171,7 +162,7 @@ export class Ec2InstanceSecurity extends pulumi.ComponentResource {
 
         this.securityGroup = new aws.ec2.SecurityGroup(`${this.name}-secGroup`, {
             description: "Security group for Spot instance.",
-            ingress: this.getIngressRules(),
+            ingress: this.args.securityGroupIngressRules,
             egress: [
                 { protocol: "-1", fromPort: 0, toPort: 0, cidrBlocks: ["0.0.0.0/0"] },
             ],
