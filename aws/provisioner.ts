@@ -203,7 +203,7 @@ export async function provisionInstance(ctx: Context, spotInstanceRequestId: str
     await deleteScheduledEvent(ctx, spotInstanceRequestId);
 }
 
-export async function runShutdownScript(instancePublicIp: string, sshPrivateKey: string) {
+export async function runShutdownScript(ctx: Context, spotInstanceRequestId: string, instancePublicIp: string, sshPrivateKey: string) {
     const conn: ConnectionArgs = {
         type: "ssh",
         host: instancePublicIp,
@@ -211,6 +211,8 @@ export async function runShutdownScript(instancePublicIp: string, sshPrivateKey:
         privateKey: sshPrivateKey,
     };
 
+    console.log("Removing any previously created scheduled events...");
+    await deleteScheduledEvent(ctx, spotInstanceRequestId);
     console.log("Running shutdown script on the instance...");
     await runCommand(conn, `. ${LINUX_USER_SCRIPTS_DIR}shutdown.sh`);
 }
