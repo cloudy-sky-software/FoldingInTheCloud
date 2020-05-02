@@ -72,6 +72,7 @@ export class EventsHandler extends pulumi.ComponentResource {
                         "events:DeleteRule",
 
                         "ec2:CreateNetworkInterface",
+                        "ec2:DeleteNetworkInterface",
                         "ec2:DescribeNetworkInterfaces",
                         "ec2:DescribeSpotInstanceRequests",
                         "ec2:DescribeInstances",

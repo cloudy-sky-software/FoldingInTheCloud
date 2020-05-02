@@ -50,9 +50,11 @@ jobs:
     - name: Install Pulumi CLI
       uses: pulumi/action-install-pulumi-cli@releases/v1
 
-    - run: npm ci
+    - name: Restore npm dependencies
+      run: npm ci
 
-    - id: set-stack-output
+    - name: Get stack outputs
+      id: set-stack-output
       run: |
         echo "::set-output name=stackOutput::$(pulumi stack output -s $PULUMI_STACK_NAME --json)"
 
@@ -60,18 +62,23 @@ jobs:
     - run: pulumi preview -s ${PULUMI_STACK_NAME}
 
     # Always run an update for a push build, IFF the stack already has resources.
-    - run: pulumi up --yes --skip-preview -s ${PULUMI_STACK_NAME}
+    - name: Update infrastructure
+      run: pulumi up --yes --skip-preview -s ${PULUMI_STACK_NAME}
       if: github.event_name == 'push' && steps.set-stack-output.outputs.stackOutput != '{}'
       
     # If this is a scheduled execution, and it is a Saturday, run the update to create the resources.
-    - run: pulumi up --yes -s ${PULUMI_STACK_NAME}
+    - name: Create infrastructure 
+      run: pulumi up --yes -s ${PULUMI_STACK_NAME}
       if: github.event_name == 'schedule' && steps.current-time.outputs.formattedTime == 'Sat'
     
     # If this is a scheduled execution, and it is a Monday, destroy the resources.
-    - run: |
+    - name: Destroy infrastructure
+      run: |
         # First terminate the EC2 instance that fulfilled the Spot Instance Request (SIR).
         # To do that, we should first query for the instance ID from the SIR.
         SIR_ID=$(pulumi stack output spotRequestId -s "${PULUMI_STACK_NAME}")
+        echo "Spot Instance Request ID is ${SIR_ID}"
+
         DESCRIBE_SIR=$(aws ec2 describe-spot-instance-requests --spot-instance-request-ids "${SIR_ID}")
         INSTANCE_ID=$(${DESCRIBE_SIR} | jq '.SpotInstanceRequests[0].InstanceId' -c -r)
 
