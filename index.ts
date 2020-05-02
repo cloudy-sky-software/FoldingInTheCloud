@@ -114,5 +114,5 @@ if (spotInstance && spotInstance.spotRequest) {
         key: zipFileName,
         serverSideEncryption: "AES256",
         source: new pulumi.asset.FileArchive("./scripts")
-    });
+    }, { dependsOn: events });
 }
