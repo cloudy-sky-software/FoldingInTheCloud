@@ -97,13 +97,12 @@ const spotInstance = new SpotInstance("fah-linux", {
     publicKey,
     privateKeyPassphrase,
 
-    /**
-     * Allow only the provided IP address as the source IP address for the Spot Instance.
-     *
-     * Learn the basics of IP address ranges and how to calculate CIDR blocks here:
-     * https://s3.amazonaws.com/tr-learncanvas/docs/IP_Filtering_in_Canvas.pdf
-     */
-    whitelistedAdminCIDBlocks: [pulumi.interpolate`${fahAllowedIP}/32`]
+    ingressRules: [
+        // For SSH access to the instance from the remote IP.
+        { protocol: "tcp", fromPort: 22, toPort: 22, cidrBlocks: [pulumi.interpolate`${fahAllowedIP}/32`] },
+        // To allow FAHControl on a remote IP to be able to connect to/control the FAHClient on the EC2 instance.
+        { protocol: "tcp", fromPort: 36330, toPort: 36330, cidrBlocks: [pulumi.interpolate`${fahAllowedIP}/32`] }
+    ],
 }, { dependsOn: bucketObject });
 
 export const bucketArn = bucket.arn;

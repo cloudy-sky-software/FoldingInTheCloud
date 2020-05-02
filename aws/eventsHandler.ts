@@ -169,9 +169,9 @@ export class EventsHandler extends pulumi.ComponentResource {
             timeout: 800, // Seconds
             runtime: aws.lambda.NodeJS12dXRuntime,
             vpcConfig: {
-                subnetIds: [this.args.ec2Security.subnet?.id!],
+                subnetIds: [this.args.ec2Security.privateSubnet?.id!],
                 securityGroupIds: [this.args.ec2Security.securityGroup?.id!],
-            }
+            },
         }, { parent: this });
     }
 }

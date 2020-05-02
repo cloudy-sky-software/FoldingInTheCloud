@@ -16,7 +16,7 @@ export interface SpotInstanceArgs {
     maxSpotPrice: string;
     blockDurationMinutes: number;
 
-    whitelistedAdminCIDBlocks: pulumi.Input<string>[]
+    ingressRules: aws.types.input.ec2.SecurityGroupIngress[];
 }
 
 export class SpotInstance extends pulumi.ComponentResource {
@@ -32,7 +32,11 @@ export class SpotInstance extends pulumi.ComponentResource {
         this.args = args;
         this.name = name;
 
-        this.ec2Security = new Ec2InstanceSecurity(name, { securityGroupSourceCIDRBlocks: args.whitelistedAdminCIDBlocks }, { ...opts, parent: this });
+        this.ec2Security = new Ec2InstanceSecurity(name,
+            {
+                securityGroupIngressRules: args.ingressRules,
+            },
+            { ...opts, parent: this });
         this.createInstance();
         this.registerOutputs({
             instance: this.spotRequest,
@@ -43,7 +47,7 @@ export class SpotInstance extends pulumi.ComponentResource {
         if (!this.ec2Security.instanceProfile) {
             throw new Error("IAM instance profile doesn't seem to have been initialized.");
         }
-        if (!this.ec2Security.subnet || !this.ec2Security.securityGroup) {
+        if (!this.ec2Security.publicSubnet || !this.ec2Security.securityGroup) {
             throw new Error("Instance security has not been created. Cannot create a spot instance request.");
         }
 
@@ -58,9 +62,9 @@ export class SpotInstance extends pulumi.ComponentResource {
             rootBlockDevice: {
                 volumeSize: 50,
             },
-            availabilityZone: this.ec2Security.subnet.availabilityZone,
+            availabilityZone: this.ec2Security.publicSubnet.availabilityZone,
             vpcSecurityGroupIds: [this.ec2Security.securityGroup.id],
-            subnetId: this.ec2Security.subnet.id,
+            subnetId: this.ec2Security.publicSubnet.id,
             spotPrice: this.args.maxSpotPrice,
             blockDurationMinutes: this.args.blockDurationMinutes,
             monitoring: true,

@@ -4,7 +4,7 @@ import * as aws from "@pulumi/aws";
 import { getAwsAz } from "../utils";
 
 export interface Ec2InstanceSecurityArgs {
-    securityGroupSourceCIDRBlocks: pulumi.Input<string>[];
+    securityGroupIngressRules: aws.types.input.ec2.SecurityGroupIngress[];
 }
 
 export class Ec2InstanceSecurity extends pulumi.ComponentResource {
@@ -12,7 +12,8 @@ export class Ec2InstanceSecurity extends pulumi.ComponentResource {
     private args: Ec2InstanceSecurityArgs;
 
     public instanceProfile: aws.iam.InstanceProfile | undefined;
-    public subnet: aws.ec2.Subnet | undefined;
+    public publicSubnet: aws.ec2.Subnet | undefined;
+    public privateSubnet: aws.ec2.Subnet | undefined;
     public securityGroup: aws.ec2.SecurityGroup | undefined;
 
     constructor(name: string, args: Ec2InstanceSecurityArgs, opts?: pulumi.ComponentResourceOptions) {
@@ -21,11 +22,11 @@ export class Ec2InstanceSecurity extends pulumi.ComponentResource {
         this.args = args;
 
         this.setupIdentities();
-        this.setupPrivateNetworking();
+        this.setupNetworking();
 
         this.registerOutputs({
             instanceProfile: this.instanceProfile,
-            subnet: this.subnet,
+            subnet: this.publicSubnet,
             securityGroup: this.securityGroup,
         });
     }
@@ -76,39 +77,55 @@ export class Ec2InstanceSecurity extends pulumi.ComponentResource {
         return [
             // For SSH access to the instance from resources within the security group.
             { protocol: "tcp", fromPort: 22, toPort: 22, self: true, },
-            // For SSH access to the instance from the remote IP.
-            { protocol: "tcp", fromPort: 22, toPort: 22, cidrBlocks: this.args.securityGroupSourceCIDRBlocks },
-            // To allow FAHControl on a remote IP to be able to connect to/control the FAHClient on the EC2 instance.
-            { protocol: "tcp", fromPort: 36330, toPort: 36330, cidrBlocks: this.args.securityGroupSourceCIDRBlocks }
+
+            ...this.args.securityGroupIngressRules,
         ];
     }
 
-    private setupPrivateNetworking() {
-        const vpc = new aws.ec2.Vpc(`${this.name}-vpc`, {
-            cidrBlock: "10.10.0.0/24",
-            enableDnsHostnames: true,
+    private setupPrivateSubnet(vpc: aws.ec2.Vpc) {
+        if (!this.privateSubnet || !this.publicSubnet) {
+            return;
+        }
+
+        const eip = new aws.ec2.Eip(`${this.name}-eip`, {
+            vpc: true,
         }, { parent: this });
 
-        this.subnet = new aws.ec2.Subnet(`${this.name}-subnet`, {
+        const natGw = new aws.ec2.NatGateway(`${this.name}-natgw`, {
+            allocationId: eip.id,
+            subnetId: this.publicSubnet.id
+        }, { parent: this });
+
+        const privateRouteTable = new aws.ec2.RouteTable(`${this.name}-nat-rt`, {
             vpcId: vpc.id,
-            // We will also use this subnet to deploy Lambda resources.
-            cidrBlock: "10.10.0.0/24",
-            availabilityZone: pulumi.output(getAwsAz(0)),
-            mapPublicIpOnLaunch: true,
-        }, { parent: this });
-
-        this.securityGroup = new aws.ec2.SecurityGroup(`${this.name}-secGroup`, {
-            description: "Security group for Spot instance.",
-            ingress: this.getIngressRules(),
-            egress: [
-                { protocol: "-1", fromPort: 0, toPort: 0, cidrBlocks: ["0.0.0.0/0"] },
+            routes: [
+                {
+                    natGatewayId: natGw.id,
+                    cidrBlock: "0.0.0.0/0",
+                }
             ],
-            vpcId: vpc.id,
         }, { parent: this });
+
+        /**
+         * Associate the NAT gateway route with the private subnet.
+         * This allows resources in the private subnet to talk to the NAT gateway
+         * destined for the internet without letting the anything on the internet initiate
+         * connections with them.
+         */
+        const natRouteTableAssoc = new aws.ec2.RouteTableAssociation(`${this.name}-nat-rtAssoc`, {
+            routeTableId: privateRouteTable.id,
+            subnetId: this.privateSubnet.id,
+        }, { parent: this });
+    }
+
+    private setupInternetGateway(vpc: aws.ec2.Vpc) {
+        if (!this.publicSubnet) {
+            return;
+        }
 
         const ig = new aws.ec2.InternetGateway(`${this.name}-ig`, {
             vpcId: vpc.id,
-        }, { parent: this });
+        }, { parent: this, customTimeouts: { delete: "1h" } });
 
         const routeTable = new aws.ec2.RouteTable(`${this.name}-rt`, {
             vpcId: vpc.id,
@@ -120,9 +137,48 @@ export class Ec2InstanceSecurity extends pulumi.ComponentResource {
             ],
         }, { parent: this });
 
+        /**
+         * Create a route table association for the public subnet to the internet gateway.
+         * This gives resources in the public subnet direct access to the internet and
+         * also makes them reachable from the internet.
+         */
         const routeTableAssoc = new aws.ec2.RouteTableAssociation(`${this.name}-rtAssoc`, {
             routeTableId: routeTable.id,
-            subnetId: this.subnet.id,
+            subnetId: this.publicSubnet.id,
         }, { parent: this });
+    }
+
+    private setupNetworking() {
+        const vpc = new aws.ec2.Vpc(`${this.name}-vpc`, {
+            cidrBlock: "10.10.0.0/16",
+            enableDnsHostnames: true,
+        }, { parent: this, customTimeouts: { delete: "1h" } });
+
+        this.publicSubnet = new aws.ec2.Subnet(`${this.name}-subnet`, {
+            vpcId: vpc.id,
+            cidrBlock: "10.10.0.0/24",
+            availabilityZone: pulumi.output(getAwsAz(0)),
+            mapPublicIpOnLaunch: true,
+        }, { parent: this, customTimeouts: { delete: "1h" } });
+
+        this.privateSubnet = new aws.ec2.Subnet(`${this.name}-priv-subnet`, {
+            vpcId: vpc.id,
+            // We will also use this subnet to deploy Lambda resources.
+            cidrBlock: "10.10.1.0/24",
+            availabilityZone: pulumi.output(getAwsAz(0)),
+            mapPublicIpOnLaunch: true,
+        }, { parent: this, customTimeouts: { delete: "1h" } });
+
+        this.securityGroup = new aws.ec2.SecurityGroup(`${this.name}-secGroup`, {
+            description: "Security group for Spot instance.",
+            ingress: this.getIngressRules(),
+            egress: [
+                { protocol: "-1", fromPort: 0, toPort: 0, cidrBlocks: ["0.0.0.0/0"] },
+            ],
+            vpcId: vpc.id,
+        }, { parent: this, customTimeouts: { delete: "1h" } });
+
+        this.setupInternetGateway(vpc);
+        this.setupPrivateSubnet(vpc);
     }
 }

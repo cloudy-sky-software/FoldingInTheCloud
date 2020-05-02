@@ -140,13 +140,14 @@ async function checkAndCreateScheduledEvent(ctx: Context, spotInstanceRequestId:
         }
     }
 
+    const ruleName = `${SCHEDULED_EVENT_NAME_PREFIX}_${spotInstanceRequestId}`;
     const rule = await cw.putRule({
-        Name: `${SCHEDULED_EVENT_NAME_PREFIX}_${spotInstanceRequestId}`,
+        Name: ruleName,
         Description: "Scheduled Event to provision an EC2 spot instance until it succeeds. This is a temporary event and will be deleted.",
         ScheduleExpression: "rate(15 minutes)",
     }).promise();
     await cw.putTargets({
-        Rule: rule.RuleArn!,
+        Rule: ruleName,
         Targets: [{
             Arn: ctx.invokedFunctionArn,
             Id: ctx.functionName,
