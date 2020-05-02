@@ -159,16 +159,23 @@ async function deleteScheduledEvent(ctx: Context, spotInstanceRequestId: string)
     const cw = new aws.sdk.CloudWatchEvents({
         region: AWS_REGION,
     });
-
     const ruleName = getScheduledEventRuleName(spotInstanceRequestId);
     let result;
     try {
-        result = await cw.deleteRule({
-            Name: ruleName,
-        }).promise();
-        await cw.removeTargets({
+        result = await cw.removeTargets({
             Rule: ruleName,
             Ids: [ctx.functionName]
+        }).promise();
+    } catch (err) {
+        // If the error is anything but a 404, re-throw it. Otherwise, ignore it.
+        if (err.code !== "ResourceNotFoundException") {
+            throw err;
+        }
+    }
+
+    try {
+        result = await cw.deleteRule({
+            Name: ruleName,
         }).promise();
     } catch (err) {
         // If the error is anything but a 404, re-throw it. Otherwise, ignore it.
