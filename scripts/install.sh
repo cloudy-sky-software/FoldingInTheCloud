@@ -8,7 +8,7 @@ VERSION=${MAJOR_MINOR_VERSION}.${PATCH_VERSION}
 
 install_fah_client() {
     wget "https://download.foldingathome.org/releases/public/release/fahclient/debian-stable-64bit/v${MAJOR_MINOR_VERSION}/fahclient_${VERSION}_amd64.deb" 2>/dev/null
-    echo "Downloaded fahclient_${VERSION}_amd64.deb. Installing it now..."
+    echo "Downloaded fahclient_${VERSION}_amd64.deb. Installing it..."
     sudo DEBIAN_FRONTEND=noninteractive dpkg -i --force-depends "fahclient_${VERSION}_amd64.deb"
     rm "fahclient_${VERSION}_amd64.deb"
     echo "Removed fahclient_${VERSION}_amd64.deb."
