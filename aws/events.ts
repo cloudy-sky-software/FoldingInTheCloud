@@ -2,8 +2,11 @@ import * as pulumi from "@pulumi/pulumi";
 import * as aws from "@pulumi/aws";
 
 import { EventsHandler } from "./eventsHandler";
+import { Ec2InstanceSecurity } from "./security";
 
 export interface EventsArgs {
+    ec2Security: Ec2InstanceSecurity;
+
     bucket: aws.s3.Bucket;
     spotInstanceRequest: aws.ec2.SpotInstanceRequest;
     zipFileName: string;
@@ -15,6 +18,7 @@ export class Events extends pulumi.ComponentResource {
 
         pulumi.all([args.spotInstanceRequest.id, args.bucket.bucket]).apply(([spotInstanceRequestId, bucketName]) => {
             const handler = new EventsHandler("fah", {
+                ec2Security: args.ec2Security,
                 bucketName: bucketName,
                 spotInstanceRequestId: spotInstanceRequestId,
                 zipFilename: args.zipFileName,

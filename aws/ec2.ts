@@ -15,6 +15,8 @@ export interface SpotInstanceArgs {
      */
     maxSpotPrice: string;
     blockDurationMinutes: number;
+
+    whitelistedAdminCIDBlocks: pulumi.Input<string>[]
 }
 
 export class SpotInstance extends pulumi.ComponentResource {
@@ -23,14 +25,14 @@ export class SpotInstance extends pulumi.ComponentResource {
 
     public spotRequest: aws.ec2.SpotInstanceRequest | undefined;
 
-    private ec2Security: Ec2InstanceSecurity;
+    public ec2Security: Ec2InstanceSecurity;
 
     constructor(name: string, args: SpotInstanceArgs, opts?: pulumi.ComponentResourceOptions) {
         super("spotInstance:ec2", name, undefined, opts);
         this.args = args;
         this.name = name;
 
-        this.ec2Security = new Ec2InstanceSecurity(name, { ...opts, parent: this });
+        this.ec2Security = new Ec2InstanceSecurity(name, { securityGroupSourceCIDRBlocks: args.whitelistedAdminCIDBlocks }, { ...opts, parent: this });
         this.createInstance();
         this.registerOutputs({
             instance: this.spotRequest,
