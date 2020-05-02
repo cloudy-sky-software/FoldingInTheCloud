@@ -67,17 +67,24 @@ export class EventsHandler extends pulumi.ComponentResource {
                 {
                     Effect: "Allow",
                     Action: [
+                        // To allow the Lambda to create CW event rules if a failure is encountered,
+                        // so that it can retry provisioning an instance.
                         "events:DescribeRule",
                         "events:PutRule",
                         "events:DeleteRule",
 
+                        // Network interface actions to allow Lambda to bind to an available
+                        // interface within the VPC.
                         "ec2:CreateNetworkInterface",
                         "ec2:DeleteNetworkInterface",
                         "ec2:DescribeNetworkInterfaces",
+
                         "ec2:DescribeSpotInstanceRequests",
                         "ec2:DescribeInstances",
+                        // To use EC2 Instance Connect to perform provisioning actions via SSH.
                         "ec2-instance-connect:SendSSHPublicKey",
 
+                        // To download the provisioning scripts from S3.
                         "s3:GetObject",
                     ],
                     Resource: "*",
