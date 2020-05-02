@@ -90,8 +90,10 @@ const spotInstance = new SpotInstance("fah-linux", {
     privateKeyPassphrase,
 
     ingressRules: [
-        // For SSH access to the instance.
-        { protocol: "tcp", fromPort: 22, toPort: 22, cidrBlocks: ["0.0.0.0/0"] },
+        // For SSH access to the instance from the remote IP.
+        { protocol: "tcp", fromPort: 22, toPort: 22, cidrBlocks: [pulumi.interpolate`${fahAllowedIP}/32`] },
+        // For SSH access to the instance from resources within the security group.
+        { protocol: "tcp", fromPort: 22, toPort: 22, self: true },
         // To allow FAHControl on a remote IP to be able to connect to/control the FAHClient on the EC2 instance.
         { protocol: "tcp", fromPort: 36330, toPort: 36330, cidrBlocks: [pulumi.interpolate`${fahAllowedIP}/32`] }
     ],
