@@ -2,9 +2,7 @@
   <!--
     This is a sample XML configuration file for the Folding@home
     console client.  This configuration file format is explained
-    in detail in the Client User"s Guide.
-
-    Copy this file to "config.xml" and edit.
+    in detail in the Client User's Guide.
 
     To set your user name, team and passkey just edit the text
     in quotes below.
@@ -18,8 +16,6 @@
   <smp value="true"/>
   <gpu value="true"/>
   <power value="full"/>
-
-  <fold-anon value="true"/>
 
   <!-- Folding Slots
     No folding slot configuration is necessary.  The client will
@@ -69,5 +65,5 @@
   -->
 
   <!-- Folding Slot Configuration -->
-  <cause v='COVID_19'/>
+  <cause v="COVID_19'/>
 </config>
