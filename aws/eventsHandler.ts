@@ -74,6 +74,8 @@ export class EventsHandler extends pulumi.ComponentResource {
                         "events:DeleteRule",
                         "events:PutTargets",
                         "events:RemoveTargets",
+                        "lambda:AddPermission",
+                        "lambda:RemovePermission",
 
                         "ec2:DescribeSpotInstanceRequests",
                         "ec2:DescribeInstances",
