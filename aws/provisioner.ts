@@ -146,6 +146,18 @@ async function checkAndCreateScheduledEvent(ctx: Context, spotInstanceRequestId:
         Description: "Scheduled Event to provision an EC2 spot instance until it succeeds. This is a temporary event and will be deleted.",
         ScheduleExpression: "rate(15 minutes)",
     }).promise();
+
+    const lambda = new aws.sdk.Lambda({
+        region: AWS_REGION,
+    });
+    await lambda.addPermission({
+        Action: "lambda:InvokeFunction",
+        FunctionName: ctx.functionName,
+        Principal: "events.amazonaws.com",
+        SourceArn: rule.RuleArn,
+        StatementId: "sched-event",
+    }).promise();
+
     await cw.putTargets({
         Rule: ruleName,
         Targets: [{
@@ -176,6 +188,21 @@ async function deleteScheduledEvent(ctx: Context, spotInstanceRequestId: string)
     try {
         result = await cw.deleteRule({
             Name: ruleName,
+        }).promise();
+    } catch (err) {
+        // If the error is anything but a 404, re-throw it. Otherwise, ignore it.
+        if (err.code !== "ResourceNotFoundException") {
+            throw err;
+        }
+    }
+
+    try {
+        const lambda = new aws.sdk.Lambda({
+            region: AWS_REGION,
+        });
+        await lambda.removePermission({
+            FunctionName: ctx.functionName,
+            StatementId: "sched-event",
         }).promise();
     } catch (err) {
         // If the error is anything but a 404, re-throw it. Otherwise, ignore it.
