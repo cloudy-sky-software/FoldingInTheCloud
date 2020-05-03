@@ -15,7 +15,10 @@ install_fah_client() {
 }
 
 echo "Printing NVIDIA CUDA drivers version info..."
-cat /proc/driver/nvidia/version
+cat /proc/driver/nvidia/version || {
+    echo "CUDA driver installation not yet complete. Exiting."
+    exit 1
+}
 
 >/dev/null 2>/dev/null which FAHClient || {
     echo "FAHClient not detected. Installing..."
