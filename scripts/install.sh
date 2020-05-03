@@ -35,7 +35,7 @@ fi
 
 sudo cp ~/config.xml /etc/fahclient/config.xml
 
-sudo /etc/init.d/FAHClient restart
+sudo /etc/init.d/FAHClient restart || exit 1
 
 IS_ACTIVE=$(systemctl is-active FAHClient)
 if [ "${IS_ACTIVE}" = "active" ]; then
