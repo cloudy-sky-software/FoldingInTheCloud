@@ -11,9 +11,11 @@ import {
     downloadS3Object,
     getSpotInstance,
     provisionInstance,
-    runShutdownScript
+    runShutdownScript,
+    getInstanceInfo
 } from "./provisioner";
 import { Ec2InstanceSecurity } from "./security";
+import { Instance } from "aws-sdk/clients/ec2";
 
 export interface LambdaProvisionerArgs {
     ec2Security: Ec2InstanceSecurity;
@@ -113,7 +115,16 @@ export class EventsHandler extends pulumi.ComponentResource {
             callback: async (e: any, ctx: Context) => {
                 console.log("lambda event", e);
                 console.log("Spot Instance request id", spotInstanceRequestId);
-                const instance = await getSpotInstance(spotInstanceRequestId);
+                let instance: Instance;
+                // For aws.ec2 events, the instance ID is in the event.
+                if (e.source === "aws.ec2") {
+                    const instanceId = e.detail["instance-id"];
+                    instance = await getInstanceInfo(instanceId);
+                } else {
+                    // For other events, we must query the spot instance request and get the currently running
+                    // instance as it can change anytime.
+                    instance = await getSpotInstance(spotInstanceRequestId);
+                }
                 if (!instance.PublicIpAddress || !instance.Placement) {
                     throw new Error("Got an unknown instance from Spot request.");
                 }

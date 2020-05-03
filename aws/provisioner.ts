@@ -81,7 +81,14 @@ export async function getSpotInstance(spotRequestId: string): Promise<Instance> 
         InstanceIds: [instanceId]
     }).promise();
 
-    console.log("Getting instance info...")
+    return await getInstanceInfo(instanceId);
+}
+
+export async function getInstanceInfo(instanceId: string): Promise<Instance> {
+    console.log("Getting instance info...");
+    const ec2 = new aws.sdk.EC2({
+        region: AWS_REGION,
+    });
     const describeInstanceResponse = await ec2.describeInstances({
         InstanceIds: [instanceId],
     }).promise();
