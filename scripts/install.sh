@@ -33,9 +33,10 @@ else
     install_fah_client
 fi
 
+# Stop the FAHClient service before overriding the config and then start it back up.
+sudo /etc/init.d/FAHClient stop
 sudo cp ~/config.xml /etc/fahclient/config.xml
-
-sudo /etc/init.d/FAHClient restart || exit 1
+sudo /etc/init.d/FAHClient start || exit 1
 
 IS_ACTIVE=$(systemctl is-active FAHClient)
 if [ "${IS_ACTIVE}" = "active" ]; then
