@@ -117,7 +117,7 @@ export class EventsHandler extends pulumi.ComponentResource {
                 console.log("Spot Instance request id", spotInstanceRequestId);
                 let instance: Instance;
                 // For aws.ec2 events, the instance ID is in the event.
-                if (e.source === "aws.ec2") {
+                if (e.hasOwnProperty("source") && e.source === "aws.ec2") {
                     const instanceId = e.detail["instance-id"];
                     instance = await getInstanceInfo(instanceId);
                 } else {
