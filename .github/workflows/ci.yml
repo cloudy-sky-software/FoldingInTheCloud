@@ -62,14 +62,14 @@ jobs:
     - run: pulumi preview -s ${PULUMI_STACK_NAME}
 
     # Always run an update for a push build, IFF the stack already has resources.
-    - name: Update infrastructure
-      run: pulumi up --yes --skip-preview -s ${PULUMI_STACK_NAME}
-      if: github.event_name == 'push' && steps.set-stack-output.outputs.stackOutput != '{}'
+    # - name: Update infrastructure
+    #   run: pulumi up --yes --skip-preview -s ${PULUMI_STACK_NAME}
+    #   if: github.event_name == 'push' && steps.set-stack-output.outputs.stackOutput != '{}'
       
     # If this is a scheduled execution, and it is a Saturday, run the update to create the resources.
-    - name: Create infrastructure 
-      run: pulumi up --yes -s ${PULUMI_STACK_NAME}
-      if: github.event_name == 'schedule' && steps.current-time.outputs.formattedTime == 'Sat'
+    # - name: Create infrastructure 
+    #   run: pulumi up --skip-preview --yes -s ${PULUMI_STACK_NAME}
+    #   if: github.event_name == 'schedule' && steps.current-time.outputs.formattedTime == 'Sat'
     
     # If this is a scheduled execution, and it is a Monday, destroy the resources.
     - name: Destroy infrastructure
@@ -79,6 +79,8 @@ jobs:
         SIR_ID=$(pulumi stack output spotRequestId -s "${PULUMI_STACK_NAME}")
         echo "Spot Instance Request ID is ${SIR_ID}"
 
+        REGION=$(pulumi config get aws:region -s ${PULUMI_STACK_NAME})
+        aws configure set region ${REGION}
         DESCRIBE_SIR=$(aws ec2 describe-spot-instance-requests --spot-instance-request-ids "${SIR_ID}")
         INSTANCE_ID=$(${DESCRIBE_SIR} | jq '.SpotInstanceRequests[0].InstanceId' -c -r)
 
@@ -86,6 +88,6 @@ jobs:
         echo "Terminating the instance ${INSTANCE_ID}"
         aws ec2 terminate-instances --instance-ids "${INSTANCE_ID}"
 
-        pulumi destroy --yes -s ${PULUMI_STACK_NAME}
-      if: github.event_name == 'schedule' && steps.current-time.outputs.formattedTime == 'Mon'
+        pulumi destroy --skip-preview --yes -s ${PULUMI_STACK_NAME}
+      if: steps.current-time.outputs.formattedTime == 'Mon'
     
