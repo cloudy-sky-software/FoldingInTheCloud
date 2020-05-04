@@ -79,7 +79,7 @@ jobs:
         SIR_ID=$(pulumi stack output spotRequestId -s "${PULUMI_STACK_NAME}")
         echo "Spot Instance Request ID is ${SIR_ID}"
 
-        REGION=$(pulumi config get aws:region -s ${PULUMI_STACK_NAME})
+        REGION=$(pulumi config get aws:region -s $PULUMI_STACK_NAME)
         aws configure set region ${REGION}
         DESCRIBE_SIR=$(aws ec2 describe-spot-instance-requests --spot-instance-request-ids "${SIR_ID}")
         INSTANCE_ID=$(${DESCRIBE_SIR} | jq '.SpotInstanceRequests[0].InstanceId' -c -r)
