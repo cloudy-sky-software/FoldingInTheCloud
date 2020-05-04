@@ -22,7 +22,7 @@ jobs:
     steps:
       # Turnstyle is used to prevent multiple push jobs from
       # running at the same time.
-      - name: Turnstyle
+    - name: Turnstyle
       uses: softprops/turnstyle@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
