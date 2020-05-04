@@ -16,7 +16,20 @@ on:
     - cron:  '0 9 * * Sat,Mon'
 
 jobs:
-  build:
+  turnstyle:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Turnstyle is used to prevent multiple push jobs from
+      # running at the same time.
+      - name: Turnstyle
+      uses: softprops/turnstyle@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  infrastructure:
+    # Wait for turnstyle to allow this job to run.
+    needs: turnstyle
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -32,13 +45,6 @@ jobs:
         # Get the day of week as Sat, Sun, Mon etc.
         # This action uses MomentJS style syntax.
         format: ddd
-
-    # Turnstyle is used to prevent multiple push jobs from
-    # running at the same time.
-    - name: Turnstyle
-      uses: softprops/turnstyle@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - uses: actions/checkout@v2
 
@@ -58,18 +64,20 @@ jobs:
       run: |
         echo "::set-output name=stackOutput::$(pulumi stack output -s $PULUMI_STACK_NAME --json)"
 
-    # Always run a preview.
-    - run: pulumi preview -s ${PULUMI_STACK_NAME}
+    # Always run a preview for pull_request events.
+    - name: Preview changes
+      run: pulumi preview -s ${PULUMI_STACK_NAME}
+      if: github.event_name == 'pull_request'
 
     # Always run an update for a push build, IFF the stack already has resources.
-    # - name: Update infrastructure
-    #   run: pulumi up --yes --skip-preview -s ${PULUMI_STACK_NAME}
-    #   if: github.event_name == 'push' && steps.set-stack-output.outputs.stackOutput != '{}'
+    - name: Update infrastructure
+      run: pulumi up --yes -s ${PULUMI_STACK_NAME}
+      if: github.event_name == 'push' && steps.set-stack-output.outputs.stackOutput != '{}'
       
     # If this is a scheduled execution, and it is a Saturday, run the update to create the resources.
-    # - name: Create infrastructure 
-    #   run: pulumi up --skip-preview --yes -s ${PULUMI_STACK_NAME}
-    #   if: github.event_name == 'schedule' && steps.current-time.outputs.formattedTime == 'Sat'
+    - name: Create infrastructure 
+      run: pulumi up --yes -s ${PULUMI_STACK_NAME}
+      if: github.event_name == 'schedule' && steps.current-time.outputs.formattedTime == 'Sat'
     
     # If this is a scheduled execution, and it is a Monday, destroy the resources.
     - name: Destroy infrastructure
@@ -88,6 +96,6 @@ jobs:
         echo "Terminating the instance ${INSTANCE_ID}"
         aws ec2 terminate-instances --instance-ids "${INSTANCE_ID}"
 
-        pulumi destroy --skip-preview --yes -s ${PULUMI_STACK_NAME}
-      if: steps.current-time.outputs.formattedTime == 'Mon'
+        pulumi destroy --yes -s ${PULUMI_STACK_NAME}
+      if: github.event_name == 'schedule' && steps.current-time.outputs.formattedTime == 'Mon'
     
