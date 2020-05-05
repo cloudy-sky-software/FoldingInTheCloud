@@ -83,7 +83,7 @@ const spotInstance = new SpotInstance("fah-linux", {
      * And if they are interrupted, we won't incur charges for the hour
      * in which it is interrupted. That sounds like a good deal.
      */
-    blockDurationMinutes: 180,
+    // blockDurationMinutes: 180,
 
     privateKey,
     publicKey,
