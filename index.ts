@@ -77,13 +77,13 @@ const spotInstance = new SpotInstance("fah-linux", {
      * Max per-hour spot price is based on the price history for the instance
      * per https://aws.amazon.com/ec2/spot/pricing/.
      */
-    maxSpotPrice: "0.442",
+    maxSpotPrice: "0.2",
     /**
      * Defined duration spot instances are less likely to be interrupted.
      * And if they are interrupted, we won't incur charges for the hour
      * in which it is interrupted. That sounds like a good deal.
      */
-    blockDurationMinutes: 180,
+    // blockDurationMinutes: 180,
 
     privateKey,
     publicKey,

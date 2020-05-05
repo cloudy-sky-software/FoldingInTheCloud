@@ -14,7 +14,7 @@ export interface SpotInstanceArgs {
      * The max price per hour that you are willing to pay for the instance.
      */
     maxSpotPrice: string;
-    blockDurationMinutes: number;
+    blockDurationMinutes?: number;
 
     ingressRules: aws.types.input.ec2.SecurityGroupIngress[];
 }

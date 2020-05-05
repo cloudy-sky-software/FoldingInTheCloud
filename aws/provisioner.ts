@@ -13,6 +13,11 @@ const AWS_REGION = aws.config.region;
  * will be removed once an instance is successfully provisioned.
  */
 const SCHEDULED_EVENT_NAME_PREFIX = "ScheduledEC2Provisioner";
+/**
+ * The StatementId of the Lambda Permission granting the temporary scheduled event
+ * permission to invoke the Lambda.
+ */
+const LAMBDA_PERMISSION_SID = "sched-event";
 
 /**
  * The path where the Lambda will download/extract the scripts zip file.
@@ -162,7 +167,7 @@ async function checkAndCreateScheduledEvent(ctx: Context, spotInstanceRequestId:
         FunctionName: ctx.functionName,
         Principal: "events.amazonaws.com",
         SourceArn: rule.RuleArn,
-        StatementId: "sched-event",
+        StatementId: LAMBDA_PERMISSION_SID,
     }).promise();
 
     await cw.putTargets({
@@ -209,7 +214,7 @@ async function deleteScheduledEvent(ctx: Context, spotInstanceRequestId: string)
         });
         await lambda.removePermission({
             FunctionName: ctx.functionName,
-            StatementId: "sched-event",
+            StatementId: LAMBDA_PERMISSION_SID,
         }).promise();
     } catch (err) {
         // If the error is anything but a 404, re-throw it. Otherwise, ignore it.
