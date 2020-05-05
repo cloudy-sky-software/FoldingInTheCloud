@@ -67,7 +67,7 @@ jobs:
     # Always run a preview for pull_request events.
     - name: Preview changes
       run: pulumi preview -s ${PULUMI_STACK_NAME}
-      if: github.event_name == 'pull_request'
+      if: github.event_name == 'pull_request' || steps.set-stack-output.outputs.stackOutput == '{}'
 
     # Always run an update for a push build, IFF the stack already has resources.
     - name: Update infrastructure
