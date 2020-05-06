@@ -2,9 +2,9 @@ import * as pulumi from "@pulumi/pulumi";
 import * as aws from "@pulumi/aws";
 
 import { Ec2InstanceSecurity } from "./security";
-import { getAmi, getUserData } from "../utils";
+import { getAmi, getAwsUserData } from "../utils";
 
-export interface SpotInstanceArgs {
+export interface Ec2SpotInstanceArgs {
     privateKey: pulumi.Input<string>;
     privateKeyPassphrase?: pulumi.Input<string>;
     publicKey: pulumi.Input<string>;
@@ -19,20 +19,20 @@ export interface SpotInstanceArgs {
     ingressRules: aws.types.input.ec2.SecurityGroupIngress[];
 }
 
-export class SpotInstance extends pulumi.ComponentResource {
+export class Ec2SpotInstance extends pulumi.ComponentResource {
     private name: string;
-    private args: SpotInstanceArgs;
+    private args: Ec2SpotInstanceArgs;
 
     public spotRequest: aws.ec2.SpotInstanceRequest | undefined;
 
     public ec2Security: Ec2InstanceSecurity;
 
-    constructor(name: string, args: SpotInstanceArgs, opts?: pulumi.ComponentResourceOptions) {
+    constructor(name: string, args: Ec2SpotInstanceArgs, opts?: pulumi.ComponentResourceOptions) {
         super("spotInstance:ec2", name, undefined, opts);
         this.args = args;
         this.name = name;
 
-        this.ec2Security = new Ec2InstanceSecurity(name,
+        this.ec2Security = new Ec2InstanceSecurity(`${name}Security`,
             {
                 securityGroupIngressRules: args.ingressRules,
             },
@@ -75,7 +75,7 @@ export class SpotInstance extends pulumi.ComponentResource {
                 // The default is `enabled`, but being explicit that the IMDS is enabled.
                 httpEndpoint: "enabled",
             },
-            userData: getUserData(),
+            userData: getAwsUserData(),
         }, { parent: this });
 
         return true;

@@ -1,11 +1,10 @@
 import * as pulumi from "@pulumi/pulumi";
 import * as aws from "@pulumi/aws";
 
-import * as axios from "axios";
 import * as ssh2 from "ssh2";
 import { ParsedKey } from "ssh2-streams";
 
-import { SpotInstance } from "./aws/ec2";
+import { Ec2SpotInstance } from "./aws/ec2";
 import { execSync } from "child_process";
 import { registerDefaultTags } from "./tags";
 import { Events } from "./aws/events";
@@ -64,7 +63,7 @@ const bucket = new aws.s3.Bucket("fah-bucket", {
     },
 });
 
-const spotInstance = new SpotInstance("fah-linux", {
+const ec2SpotInstance = new Ec2SpotInstance("fah-linux", {
     /**
      * When picking an instance type, be sure to also pick a region
      * where the chance of interruption is low. Set the location using
@@ -100,16 +99,16 @@ const spotInstance = new SpotInstance("fah-linux", {
 }, { dependsOn: bucket });
 
 export const bucketArn = bucket.arn;
-export const spotRequestId = spotInstance.spotRequest?.id;
+export const spotRequestId = ec2SpotInstance.spotRequest?.id;
 
-if (spotInstance && spotInstance.spotRequest) {
+if (ec2SpotInstance && ec2SpotInstance.spotRequest) {
     const zipFileName = "fah-scripts";
     const events = new Events("fah-events", {
-        ec2Security: spotInstance.ec2Security,
-        spotInstanceRequest: spotInstance.spotRequest,
+        ec2Security: ec2SpotInstance.ec2Security,
+        spotInstanceRequest: ec2SpotInstance.spotRequest,
         bucket,
         zipFileName,
-    }, { dependsOn: spotInstance });
+    }, { dependsOn: ec2SpotInstance });
 
     const bucketObject = new aws.s3.BucketObject("fah-scripts", {
         bucket: bucket,

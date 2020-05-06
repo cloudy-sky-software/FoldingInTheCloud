@@ -17,7 +17,7 @@ export class Ec2InstanceSecurity extends pulumi.ComponentResource {
     public securityGroup: aws.ec2.SecurityGroup | undefined;
 
     constructor(name: string, args: Ec2InstanceSecurityArgs, opts?: pulumi.ComponentResourceOptions) {
-        super("spotInstance:ec2:security", name, undefined, opts);
+        super("aws:security", name, undefined, opts);
         this.name = name;
         this.args = args;
 

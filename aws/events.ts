@@ -14,7 +14,7 @@ export interface EventsArgs {
 
 export class Events extends pulumi.ComponentResource {
     constructor(name: string, args: EventsArgs, opts?: pulumi.ComponentResourceOptions) {
-        super("ec2:events", name, undefined, opts);
+        super("aws:events", name, undefined, opts);
 
         pulumi.all([args.spotInstanceRequest.id, args.bucket.bucket]).apply(([spotInstanceRequestId, bucketName]) => {
             const handler = new EventsHandler("fah", {
