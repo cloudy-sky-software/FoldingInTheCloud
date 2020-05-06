@@ -157,7 +157,7 @@ export class Ec2InstanceSecurity extends pulumi.ComponentResource {
             // We will also use this subnet to deploy Lambda resources.
             cidrBlock: "10.10.1.0/24",
             availabilityZone: pulumi.output(getAwsAz(0)),
-            mapPublicIpOnLaunch: true,
+            mapPublicIpOnLaunch: false,
         }, { parent: this, customTimeouts: { delete: "1h" } });
 
         this.securityGroup = new aws.ec2.SecurityGroup(`${this.name}-secGroup`, {
