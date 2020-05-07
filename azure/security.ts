@@ -1,10 +1,10 @@
 import * as pulumi from "@pulumi/pulumi";
 import * as azure from "@pulumi/azure";
-import { NetworkInterface, VirtualNetwork, NetworkSecurityGroup, PublicIp, NetworkInterfaceSecurityGroupAssociation } from "@pulumi/azure/network";
+import { NetworkInterface, VirtualNetwork, NetworkSecurityGroup, PublicIp, NetworkInterfaceSecurityGroupAssociation, NatGateway, SubnetNatGatewayAssociation, RouteTable, VirtualNetworkGateway, LocalNetworkGateway } from "@pulumi/azure/network";
 
 export interface AzureSecurityArgs {
     resourceGroup: azure.core.ResourceGroup;
-    securityGroupIngressRules: pulumi.Input<azure.types.input.network.NetworkSecurityGroupSecurityRule>[];
+    securityGroupRules: pulumi.Input<azure.types.input.network.NetworkSecurityGroupSecurityRule>[];
 }
 
 export class AzureSecurity extends pulumi.ComponentResource {
@@ -28,18 +28,44 @@ export class AzureSecurity extends pulumi.ComponentResource {
         });
     }
 
-    private setupInternetGateway() {
-
+    private setupPrivateSubnet() {
+        const natPublicIP = new PublicIp(`${this.name}-natPubIp`, {
+            allocationMethod: "Static",
+            resourceGroupName: this.args.resourceGroup.name,
+            sku: "Basic",
+            ipVersion: "IPv4",
+            idleTimeoutInMinutes: 2,
+        }, { parent: this });
+        const natGateway = new NatGateway(`${this.name}-natGw`, {
+            resourceGroupName: this.args.resourceGroup.name,
+            idleTimeoutInMinutes: 2,
+            skuName: "Standard",
+            publicIpAddressIds: [natPublicIP.id],
+            // TODO
+            zones: [],
+        }, { parent: this });
+        const natAssociation = new SubnetNatGatewayAssociation(`${this.name}-natAssoc`, {
+            natGatewayId: natGateway.id,
+            subnetId: this.getSubnetId("privateSubnet")
+        }, { parent: this });
     }
 
-    private setupPrivateSubnet() {
+    private getSubnetId(subnetName: string): pulumi.Output<string> {
+        if (!this.vnet) {
+            throw new Error("VNet hasn't been created yet.");
+        }
+        const s = this.vnet.subnets.apply(subnets => subnets.filter(s => s.name === subnetName));
+        if (!s || !s.length) {
+            throw new Error(`Could not find subnet with name ${subnetName} in the vnet.`);
+        }
 
+        return s[0].id;
     }
 
     private setupNetworking() {
         this.securityGroup = new NetworkSecurityGroup(`${this.name}-securityGroup`, {
             resourceGroupName: this.args.resourceGroup.name,
-            securityRules: this.args.securityGroupIngressRules || [
+            securityRules: this.args.securityGroupRules || [
                 {
                     name: "AllowSSH",
                     access: "Allow",
@@ -78,6 +104,8 @@ export class AzureSecurity extends pulumi.ComponentResource {
             allocationMethod: "Dynamic",
             resourceGroupName: this.args.resourceGroup.name,
             sku: "Basic",
+            idleTimeoutInMinutes: 2,
+            ipVersion: "IPv4"
         }, { parent: this });
 
         this.networkInterface = new NetworkInterface(`${this.name}-nic`, {
@@ -87,15 +115,17 @@ export class AzureSecurity extends pulumi.ComponentResource {
                     name: "publicIpConfig",
                     privateIpAddressAllocation: "Dynamic",
                     primary: true,
-                    subnetId: this.vnet.subnets.apply(subnets => subnets.filter(s => s.name === "publicSubnet")[0].id),
+                    subnetId: this.getSubnetId("publicSubnet"),
                     publicIpAddressId: publicIPs.id
                 },
                 {
                     name: "privateIpConfig",
                     privateIpAddressAllocation: "Dynamic",
-                    subnetId: this.vnet.subnets.apply(subnets => subnets.filter(s => s.name === "privateSubnet")[0].id),
+                    subnetId: this.getSubnetId("privateSubnet"),
                 }
             ],
         }, { parent: this });
+
+        this.setupPrivateSubnet();
     }
 }

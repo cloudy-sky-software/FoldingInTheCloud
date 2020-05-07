@@ -11,7 +11,7 @@ export interface AzureSpotVmArgs {
     maxSpotPrice: number;
     resourceGroupName: string;
 
-    securityGroupIngressRules: pulumi.Input<azure.types.input.network.NetworkSecurityGroupSecurityRule>[];
+    securityGroupRules: pulumi.Input<azure.types.input.network.NetworkSecurityGroupSecurityRule>[];
 }
 
 export class AzureSpotVm extends pulumi.ComponentResource {
@@ -31,7 +31,7 @@ export class AzureSpotVm extends pulumi.ComponentResource {
         this.vmSecurity = new AzureSecurity(`${name}Security`,
             {
                 resourceGroup: this.resourceGroup,
-                securityGroupIngressRules: this.args.securityGroupIngressRules,
+                securityGroupRules: this.args.securityGroupRules,
             },
             { parent: this });
 
@@ -59,7 +59,8 @@ export class AzureSpotVm extends pulumi.ComponentResource {
                 caching: "None",
             },
             evictionPolicy: "Deallocate",
-            availabilitySetId: "",
+            // TODO
+            zone: "",
             networkInterfaceIds: [this.vmSecurity.networkInterface.id],
             customData: getUserData(),
             adminUsername: "ubuntu",
