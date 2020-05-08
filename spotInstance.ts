@@ -34,7 +34,9 @@ export class SpotInstance extends pulumi.ComponentResource {
     private createAzureInfra() {
         const azureSpotVm = new AzureSpotVm(`${this.name}`, {
             resourceGroupName: "fah-linux",
-            maxSpotPrice: 0.1135,
+            // Use Azure VM the price configurator to find the best price.
+            // https://azure.microsoft.com/en-us/pricing/details/virtual-machines/linux/
+            maxSpotPrice: 0.2,
             publicKey,
             securityGroupRules: [
                 {

@@ -12,6 +12,7 @@ export class AzureSecurity extends pulumi.ComponentResource {
     private args: AzureSecurityArgs;
 
     public networkInterface: NetworkInterface | undefined;
+    public privateNic: NetworkInterface | undefined;
     public vnet: VirtualNetwork | undefined;
     public securityGroup: NetworkSecurityGroup | undefined;
 
@@ -87,7 +88,7 @@ export class AzureSecurity extends pulumi.ComponentResource {
         }, { parent: this });
 
         this.vnet = new VirtualNetwork(`${this.name}-vnet`, {
-            addressSpaces: ["10.0.0.0/16"],
+            addressSpaces: ["10.10.0.0/16"],
             resourceGroupName: this.args.resourceGroup.name,
             subnets: [
                 {
@@ -121,12 +122,18 @@ export class AzureSecurity extends pulumi.ComponentResource {
                     subnetId: this.getSubnetId("publicSubnet"),
                     publicIpAddressId: publicIPs.id
                 },
+            ],
+        }, { parent: this });
+
+        this.privateNic = new NetworkInterface(`${this.name}-priv`, {
+            resourceGroupName: this.args.resourceGroup.name,
+            ipConfigurations: [
                 {
                     name: "privateIpConfig",
                     privateIpAddressAllocation: "Dynamic",
                     subnetId: this.getSubnetId("privateSubnet"),
                 }
-            ],
+            ]
         }, { parent: this });
 
         this.setupPrivateSubnet();
