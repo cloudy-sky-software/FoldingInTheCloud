@@ -3,7 +3,7 @@
 echo "Launching FAH installation script..."
 
 MAJOR_MINOR_VERSION=7.6
-PATCH_VERSION=9
+PATCH_VERSION=13
 VERSION=${MAJOR_MINOR_VERSION}.${PATCH_VERSION}
 
 install_fah_client() {
