@@ -136,6 +136,6 @@ export class AzureSecurity extends pulumi.ComponentResource {
             ]
         }, { parent: this });
 
-        this.setupPrivateSubnet();
+        // this.setupPrivateSubnet();
     }
 }
