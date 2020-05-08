@@ -56,6 +56,7 @@ export class AzureSpotVm extends pulumi.ComponentResource {
                 sku: "18.04-LTS",
                 version: "Latest",
             },
+            // Standard_NC6=6 cores, 56GB RAM, and an NVIDIA K80 GPU.
             size: "Standard_NC6",
             osDisk: {
                 diskSizeGb: 50,
