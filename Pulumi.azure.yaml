@@ -1,0 +1,4 @@
+config:
+  azure:environment: public
+  azure:location: NorthCentralUS
+  folding-in-the-cloud:cloudProvider: azure

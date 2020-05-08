@@ -1,7 +1,5 @@
 config:
   aws:region: us-west-1
-  azure:environment: public
-  azure:location: NorthCentralUS
   folding-in-the-cloud:cloudProvider: aws
   folding-in-the-cloud:fahAllowedIP:
     secure: AAABALcHxhxrzi5b7zHjFMziVURNrRZF5ba1GEWip5tASp1LMeb8Vf3XtbCy3A==
