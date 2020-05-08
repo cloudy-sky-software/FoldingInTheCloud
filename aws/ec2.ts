@@ -32,7 +32,7 @@ export class Ec2SpotInstance extends pulumi.ComponentResource {
         this.args = args;
         this.name = name;
 
-        this.ec2Security = new Ec2InstanceSecurity(`${name}Security`,
+        this.ec2Security = new Ec2InstanceSecurity(`${name}-sec`,
             {
                 securityGroupIngressRules: args.ingressRules,
             },
@@ -55,7 +55,7 @@ export class Ec2SpotInstance extends pulumi.ComponentResource {
         const key = new aws.ec2.KeyPair(`${this.name}-InstanceKey`, {
             publicKey: this.args.publicKey,
         }, { parent: this });
-        this.spotRequest = new aws.ec2.SpotInstanceRequest(`${this.name}-Instance`, {
+        this.spotRequest = new aws.ec2.SpotInstanceRequest(`${this.name}-spotreq`, {
             instanceType: this.args.instanceType,
             ami: pulumi.output(getAmi()).apply(ami => ami.id),
             keyName: key.keyName,

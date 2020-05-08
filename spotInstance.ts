@@ -33,10 +33,37 @@ export class SpotInstance extends pulumi.ComponentResource {
 
     private createAzureInfra() {
         const azureSpotVm = new AzureSpotVm(`${this.name}`, {
-            resourceGroupName: "",
-            maxSpotPrice: 0.111,
+            resourceGroupName: "fah-linux",
+            maxSpotPrice: 0.1135,
             publicKey,
-            securityGroupRules: []
+            securityGroupRules: [
+                {
+                    name: "AllowSSH",
+                    access: "Allow",
+                    direction: "Inbound",
+                    priority: 300,
+                    protocol: "TCP",
+
+                    sourcePortRange: "*",
+                    sourceAddressPrefix: pulumi.interpolate`${fahAllowedIP}/32`,
+
+                    destinationAddressPrefix: "*",
+                    destinationPortRange: "22",
+                },
+                {
+                    name: "AllowFAHRemoteControl",
+                    access: "Allow",
+                    direction: "Inbound",
+                    priority: 400,
+                    protocol: "TCP",
+
+                    sourcePortRange: "*",
+                    sourceAddressPrefix: pulumi.interpolate`${fahAllowedIP}/32`,
+
+                    destinationAddressPrefix: "VirtualNetwork",
+                    destinationPortRange: "36330",
+                }
+            ]
         }, { parent: this });
 
         this.registerOutputs({

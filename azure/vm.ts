@@ -27,8 +27,8 @@ export class AzureSpotVm extends pulumi.ComponentResource {
 
         this.resourceGroup = new ResourceGroup(this.args.resourceGroupName, {
             name: this.args.resourceGroupName,
-        });
-        this.vmSecurity = new AzureSecurity(`${name}Security`,
+        }, { parent: this });
+        this.vmSecurity = new AzureSecurity(`${name}-sec`,
             {
                 resourceGroup: this.resourceGroup,
                 securityGroupRules: this.args.securityGroupRules,
@@ -44,6 +44,10 @@ export class AzureSpotVm extends pulumi.ComponentResource {
     }
 
     private createInstance() {
+        if (!this.vmSecurity.networkInterface) {
+            return;
+        }
+
         this.spotInstance = new LinuxVirtualMachine("spot-vm", {
             resourceGroupName: this.resourceGroup.name,
             sourceImageReference: {
@@ -59,10 +63,8 @@ export class AzureSpotVm extends pulumi.ComponentResource {
                 caching: "None",
             },
             evictionPolicy: "Deallocate",
-            // TODO
-            zone: "",
             networkInterfaceIds: [this.vmSecurity.networkInterface.id],
-            customData: getUserData(),
+            customData: Buffer.from(getUserData()).toString("base64"),
             adminUsername: "ubuntu",
             adminSshKeys: [
                 {

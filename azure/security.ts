@@ -11,9 +11,9 @@ export class AzureSecurity extends pulumi.ComponentResource {
     private name: string;
     private args: AzureSecurityArgs;
 
-    public networkInterface: NetworkInterface;
-    public vnet: VirtualNetwork;
-    public securityGroup: NetworkSecurityGroup;
+    public networkInterface: NetworkInterface | undefined;
+    public vnet: VirtualNetwork | undefined;
+    public securityGroup: NetworkSecurityGroup | undefined;
 
     constructor(name: string, args: AzureSecurityArgs, opts?: pulumi.ComponentResourceOptions) {
         super("azure:security", name, undefined, opts);
@@ -32,17 +32,16 @@ export class AzureSecurity extends pulumi.ComponentResource {
         const natPublicIP = new PublicIp(`${this.name}-natPubIp`, {
             allocationMethod: "Static",
             resourceGroupName: this.args.resourceGroup.name,
-            sku: "Basic",
+            // The SKU of the PublicIP and the NAT gateway must match.
+            sku: "Standard",
             ipVersion: "IPv4",
-            idleTimeoutInMinutes: 2,
+            idleTimeoutInMinutes: 4,
         }, { parent: this });
         const natGateway = new NatGateway(`${this.name}-natGw`, {
             resourceGroupName: this.args.resourceGroup.name,
-            idleTimeoutInMinutes: 2,
+            idleTimeoutInMinutes: 4,
             skuName: "Standard",
             publicIpAddressIds: [natPublicIP.id],
-            // TODO
-            zones: [],
         }, { parent: this });
         const natAssociation = new SubnetNatGatewayAssociation(`${this.name}-natAssoc`, {
             natGatewayId: natGateway.id,
@@ -63,6 +62,10 @@ export class AzureSecurity extends pulumi.ComponentResource {
     }
 
     private setupNetworking() {
+        if (this.args.securityGroupRules.length === 0) {
+            pulumi.log.warn("Custom security rules not provided. The default allows SSH access from any source.");
+        }
+
         this.securityGroup = new NetworkSecurityGroup(`${this.name}-securityGroup`, {
             resourceGroupName: this.args.resourceGroup.name,
             securityRules: this.args.securityGroupRules || [
@@ -104,7 +107,7 @@ export class AzureSecurity extends pulumi.ComponentResource {
             allocationMethod: "Dynamic",
             resourceGroupName: this.args.resourceGroup.name,
             sku: "Basic",
-            idleTimeoutInMinutes: 2,
+            idleTimeoutInMinutes: 4,
             ipVersion: "IPv4"
         }, { parent: this });
 
