@@ -32,7 +32,7 @@ export class EventsHandler extends pulumi.ComponentResource {
     private role: aws.iam.Role | undefined;
 
     constructor(name: string, args: LambdaProvisionerArgs, opts?: pulumi.ComponentResourceOptions) {
-        super("events:lambda:handler", name, undefined, opts);
+        super("aws:events:lambda:handler", name, undefined, opts);
         this.name = name;
         this.args = args;
 

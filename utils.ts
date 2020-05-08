@@ -49,12 +49,19 @@ async function getScriptsHash(): Promise<string> {
     return p;
 }
 
-export function getUserData(): string {
+export function getAwsUserData(): string {
+    return getUserData("sudo apt-get install ec2-instance-connect --yes");
+}
+
+export function getUserData(additionalTools?: string): string {
     const PATH = "export PATH=/usr/local/cuda-10.2/bin:${PATH}";
+    if (!additionalTools) {
+        additionalTools = "";
+    }
 
     return `#!/bin/bash
 sudo apt-get update --yes
-sudo apt-get install ec2-instance-connect --yes
+${additionalTools}
 
 echo "Preparing the instance..."
 sudo apt install gcc --yes
