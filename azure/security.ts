@@ -11,7 +11,7 @@ export class AzureSecurity extends pulumi.ComponentResource {
     private name: string;
     private args: AzureSecurityArgs;
 
-    public networkInterface: NetworkInterface | undefined;
+    public publicNic: NetworkInterface | undefined;
     public privateNic: NetworkInterface | undefined;
     public vnet: VirtualNetwork | undefined;
     public securityGroup: NetworkSecurityGroup | undefined;
@@ -23,7 +23,7 @@ export class AzureSecurity extends pulumi.ComponentResource {
 
         this.setupNetworking();
         this.registerOutputs({
-            networkInterface: this.networkInterface,
+            networkInterface: this.publicNic,
             securityGroup: this.securityGroup,
             vnet: this.vnet,
         });
@@ -112,7 +112,7 @@ export class AzureSecurity extends pulumi.ComponentResource {
             ipVersion: "IPv4"
         }, { parent: this });
 
-        this.networkInterface = new NetworkInterface(`${this.name}-nic`, {
+        this.publicNic = new NetworkInterface(`${this.name}-nic`, {
             resourceGroupName: this.args.resourceGroup.name,
             ipConfigurations: [
                 {

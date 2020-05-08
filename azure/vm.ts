@@ -44,7 +44,7 @@ export class AzureSpotVm extends pulumi.ComponentResource {
     }
 
     private createInstance() {
-        if (!this.vmSecurity.networkInterface) {
+        if (!this.vmSecurity.publicNic) {
             return;
         }
 
@@ -63,7 +63,7 @@ export class AzureSpotVm extends pulumi.ComponentResource {
                 caching: "None",
             },
             evictionPolicy: "Deallocate",
-            networkInterfaceIds: [this.vmSecurity.networkInterface.id],
+            networkInterfaceIds: [this.vmSecurity.publicNic.id],
             customData: Buffer.from(getUserData()).toString("base64"),
             adminUsername: "ubuntu",
             adminSshKeys: [
