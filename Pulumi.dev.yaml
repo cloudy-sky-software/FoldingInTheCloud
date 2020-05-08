@@ -1,5 +1,6 @@
 config:
   aws:region: us-west-1
+  folding-in-the-cloud:cloudProvider: azure
   folding-in-the-cloud:fahAllowedIP:
     secure: AAABALcHxhxrzi5b7zHjFMziVURNrRZF5ba1GEWip5tASp1LMeb8Vf3XtbCy3A==
   folding-in-the-cloud:fahPassKey:
