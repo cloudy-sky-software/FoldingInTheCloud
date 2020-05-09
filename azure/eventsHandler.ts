@@ -2,10 +2,13 @@ import * as pulumi from "@pulumi/pulumi";
 import * as azure from "@pulumi/azure";
 import { ResourceGroup } from "@pulumi/azure/core";
 import { FunctionApp } from "@pulumi/azure/appservice";
+import { NetworkInterface } from "@pulumi/azure/network";
+import { Account } from "@pulumi/azure/storage";
 
 export interface EventsHandlerArgs {
     resourceGroup: ResourceGroup;
-    privateNic: N
+    privateNic: NetworkInterface;
+    storageAccount: Account;
 }
 
 export class EventsHandler extends pulumi.ComponentResource {
@@ -18,10 +21,5 @@ export class EventsHandler extends pulumi.ComponentResource {
         this.args = args;
 
         this.registerOutputs({});
-        const functionApp = new FunctionApp(`${this.name}-func`, {
-            resourceGroupName: this.args.resourceGroup.name,
-            version: "~3",
-
-        }, { parent: this });
     }
 }
