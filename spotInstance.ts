@@ -168,22 +168,24 @@ export class SpotInstance extends pulumi.ComponentResource {
             ],
         }, { dependsOn: bucket, parent: this });
 
-        if (ec2SpotInstance && ec2SpotInstance.spotRequest) {
-            const zipFileName = "fah-scripts";
-            const events = new AwsEvents("fah-events", {
-                ec2Security: ec2SpotInstance.ec2Security,
-                spotInstanceRequest: ec2SpotInstance.spotRequest,
-                bucket,
-                zipFileName,
-            }, { dependsOn: ec2SpotInstance, parent: this });
-
-            const bucketObject = new aws.s3.BucketObject("fah-scripts", {
-                bucket: bucket,
-                key: zipFileName,
-                serverSideEncryption: "AES256",
-                source: new pulumi.asset.FileArchive("./scripts")
-            }, { dependsOn: events, parent: bucket });
+        if (!ec2SpotInstance || !ec2SpotInstance.spotRequest) {
+            return;
         }
+
+        const zipFileName = "fah-scripts";
+        const events = new AwsEvents("fah-events", {
+            ec2Security: ec2SpotInstance.ec2Security,
+            spotInstanceRequest: ec2SpotInstance.spotRequest,
+            bucket,
+            zipFileName,
+        }, { dependsOn: ec2SpotInstance, parent: this });
+
+        const bucketObject = new aws.s3.BucketObject("fah-scripts", {
+            bucket: bucket,
+            key: zipFileName,
+            serverSideEncryption: "AES256",
+            source: new pulumi.asset.FileArchive("./scripts")
+        }, { dependsOn: events, parent: bucket });
 
         this.registerOutputs({
             objectStorage: bucket.bucket,

@@ -73,6 +73,8 @@ export class AzureSpotVm extends pulumi.ComponentResource {
             priority: "Spot",
             allowExtensionOperations: true,
             maxBidPrice: this.args.maxSpotPrice,
+            // Enable the Azure VM Agent if you are planning to install VM extensions.
+            // provisionVmAgent: true
         }, { parent: this });
     }
 }

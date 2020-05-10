@@ -6,7 +6,7 @@ import { Readable } from "stream";
 
 const eventGridTrigger: AzureFunction = async function (context: Context): Promise<void> {
     const eventGridEvent = context.bindings.eventGridEvent;
-    console.log(eventGridEvent);
+    context.log(eventGridEvent);
     const inputBlob = context.bindings.inputBlob;
     const privateKey = process.env["sshPrivateKey"];
     if (!privateKey) {
@@ -23,10 +23,10 @@ const eventGridTrigger: AzureFunction = async function (context: Context): Promi
         Readable
             .from(inputBlob)
             .pipe(unzipper.Extract({ path: LOCAL_SCRIPTS_PATH })).on("error", (err) => {
-                console.error("File Stream error:", err);
+                context.log("File Stream error:", err);
                 reject(err);
             }).on("close", async () => {
-                console.log("Extracted blob to local path.");
+                context.log("Extracted blob to local path.");
                 const conn: ConnectionArgs = {
                     type: "ssh",
                     host: instancePublicIp,
@@ -47,9 +47,9 @@ const eventGridTrigger: AzureFunction = async function (context: Context): Promi
 };
 
 async function provisionInstance(context: Context, conn: ConnectionArgs) {
-    console.log("Provisioning instance...");
+    context.log("Provisioning instance...");
     try {
-        console.log("Copying files...");
+        context.log("Copying files...");
         await copyFile(conn, LOCAL_SCRIPTS_PATH, LINUX_USER_SCRIPTS_DIR);
     } catch (err) {
         context.done(err);
@@ -62,7 +62,7 @@ async function provisionInstance(context: Context, conn: ConnectionArgs) {
             `. ${LINUX_USER_SCRIPTS_DIR}install.sh`
         ];
 
-        console.log("Executing commands on the instance...");
+        context.log("Executing commands on the instance...");
         for (const cmd of commands) {
             await runCommand(conn, cmd);
         }

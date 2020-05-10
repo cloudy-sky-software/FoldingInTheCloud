@@ -6,9 +6,9 @@
       "direction": "in"
     },
     {
-      "name": "inputBlob",
       "type": "blob",
-      "path": "%scriptsContainer%/{blobName}",
+      "name": "inputBlob",
+      "path": "{data.url}",
       "direction": "in"
     }
   ],
