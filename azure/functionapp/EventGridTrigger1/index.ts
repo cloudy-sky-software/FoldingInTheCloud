@@ -15,7 +15,8 @@ const eventGridTrigger: AzureFunction = async function (context: Context): Promi
     }
     const instancePublicIp = process.env["instancePublicIp"];
     if (!instancePublicIp) {
-        context.done("instancePublicIp is missing in the environment settings.")
+        context.done("instancePublicIp is missing in the environment settings.");
+        return;
     }
 
     const p = new Promise((resolve, reject) => {
@@ -49,7 +50,7 @@ async function provisionInstance(context: Context, conn: ConnectionArgs) {
     console.log("Provisioning instance...");
     try {
         console.log("Copying files...");
-        await copyFile(conn, "", LINUX_USER_SCRIPTS_DIR);
+        await copyFile(conn, LOCAL_SCRIPTS_PATH, LINUX_USER_SCRIPTS_DIR);
     } catch (err) {
         context.done(err);
         return;

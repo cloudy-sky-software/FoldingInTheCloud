@@ -12,5 +12,5 @@
       "direction": "in"
     }
   ],
-  "scriptFile": "../dist/EventGridTrigger1/index.js"
+  "scriptFile": "../dist/azure/functionapp/EventGridTrigger1/index.js"
 }

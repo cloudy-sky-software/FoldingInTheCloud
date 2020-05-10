@@ -1,5 +1,10 @@
 {
     "name": "folding-at-cloud",
+    "scripts": {
+        "azure": "npm run buildAzFuncApp && pulumi up -s azure",
+        "aws": "pulumi up -s aws",
+        "buildAzFuncApp": "cd ./azure/functionapp && npm run build:production"
+    },
     "devDependencies": {
         "@types/node": "^13.13.1",
         "@types/ssh2": "^0.5.43",
