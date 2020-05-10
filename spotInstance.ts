@@ -47,7 +47,7 @@ export class SpotInstance extends pulumi.ComponentResource {
             accountReplicationType: "LRS",
             resourceGroupName: resourceGroup.name,
             accountTier: "Standard",
-        }, { parent: this });
+        }, { parent: resourceGroup });
 
         const blobContainer = new Container(`${this.name}-cntnr`, {
             containerAccessType: "private",
@@ -90,7 +90,7 @@ export class SpotInstance extends pulumi.ComponentResource {
                     destinationPortRange: "36330",
                 }
             ]
-        }, { parent: this });
+        }, { parent: resourceGroup, dependsOn: storageAccount });
 
         if (!azureSpotVm.spotInstance) {
             return;
@@ -102,7 +102,7 @@ export class SpotInstance extends pulumi.ComponentResource {
             scriptsContainer: blobContainer,
             storageAccount,
             vm: azureSpotVm.spotInstance
-        }, { parent: this });
+        }, { parent: resourceGroup, dependsOn: azureSpotVm });
 
         const scriptsBlob = new Blob(`${this.name}-blob`, {
             storageAccountName: storageAccount.name,
@@ -110,7 +110,7 @@ export class SpotInstance extends pulumi.ComponentResource {
             type: "Block",
             name: "scripts",
             source: new pulumi.asset.FileArchive("./scripts")
-        }, { parent: this, dependsOn: events });
+        }, { parent: resourceGroup, dependsOn: events });
 
         this.registerOutputs({
             objectStorage: undefined,

@@ -47,11 +47,6 @@ export class EventsHandler extends pulumi.ComponentResource {
                     value: this.args.privateKey,
                 }
             ],
-            siteConfig: {
-                use32BitWorkerProcess: false,
-                alwaysOn: true,
-                ftpsState: "Disabled",
-            },
             appSettings: {
                 "scriptsContainer": this.args.scriptsContainer.name,
                 "instancePublicIp": this.args.vm.publicIpAddress,
