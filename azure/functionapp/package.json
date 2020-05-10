@@ -9,9 +9,15 @@
     "start": "func start",
     "test": "echo \"No tests yet...\""
   },
-  "dependencies": {},
+  "dependencies": {
+    "scp2": "github:spmjs/node-scp2#master",
+    "ssh2": "^0.8.9",
+    "unzipper": "^0.10.11"
+  },
   "devDependencies": {
     "@azure/functions": "^1.0.2-beta2",
+    "@types/ssh2": "^0.5.43",
+    "@types/unzipper": "^0.10.3",
     "typescript": "^3.3.3"
   }
 }

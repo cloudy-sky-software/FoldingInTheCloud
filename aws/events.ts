@@ -12,7 +12,7 @@ export interface EventsArgs {
     zipFileName: string;
 }
 
-export class Events extends pulumi.ComponentResource {
+export class AwsEvents extends pulumi.ComponentResource {
     constructor(name: string, args: EventsArgs, opts?: pulumi.ComponentResourceOptions) {
         super("aws:events", name, undefined, opts);
 

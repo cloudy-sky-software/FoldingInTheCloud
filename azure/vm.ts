@@ -7,9 +7,9 @@ import { AzureSecurity } from "./security";
 import { getUserData } from "../utils";
 
 export interface AzureSpotVmArgs {
+    resourceGroup: ResourceGroup;
     publicKey: string;
     maxSpotPrice: number;
-    resourceGroupName: string;
 
     securityGroupRules: pulumi.Input<azure.types.input.network.NetworkSecurityGroupSecurityRule>[];
 }
@@ -17,7 +17,6 @@ export interface AzureSpotVmArgs {
 export class AzureSpotVm extends pulumi.ComponentResource {
     private args: AzureSpotVmArgs;
 
-    public resourceGroup: ResourceGroup;
     public spotInstance: LinuxVirtualMachine | undefined;
     public vmSecurity: AzureSecurity;
 
@@ -25,12 +24,9 @@ export class AzureSpotVm extends pulumi.ComponentResource {
         super("spotInstance:azure", name, undefined, opts);
         this.args = args;
 
-        this.resourceGroup = new ResourceGroup(this.args.resourceGroupName, {
-            name: this.args.resourceGroupName,
-        }, { parent: this });
         this.vmSecurity = new AzureSecurity(`${name}-sec`,
             {
-                resourceGroup: this.resourceGroup,
+                resourceGroup: this.args.resourceGroup,
                 securityGroupRules: this.args.securityGroupRules,
             },
             { parent: this });
@@ -38,7 +34,7 @@ export class AzureSpotVm extends pulumi.ComponentResource {
         this.createInstance();
 
         this.registerOutputs({
-            resourceGroup: this.resourceGroup,
+            resourceGroup: this.args.resourceGroup,
             spotInstance: this.spotInstance,
         });
     }
@@ -49,7 +45,7 @@ export class AzureSpotVm extends pulumi.ComponentResource {
         }
 
         this.spotInstance = new LinuxVirtualMachine("spot-vm", {
-            resourceGroupName: this.resourceGroup.name,
+            resourceGroupName: this.args.resourceGroup.name,
             sourceImageReference: {
                 offer: "UbuntuServer",
                 publisher: "Canonical",

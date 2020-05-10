@@ -4,7 +4,14 @@ import { Context } from "@pulumi/aws/lambda";
 import { DescribeSpotInstanceRequestsResult, DescribeInstancesResult, Instance } from "aws-sdk/clients/ec2";
 import * as unzipper from "unzipper";
 
-import { copyFile, ConnectionArgs, runCommand } from "../ssh-utils";
+import {
+    copyFile,
+    ConnectionArgs,
+    runCommand,
+    LOCAL_SCRIPTS_PATH,
+    INSTANCE_USER,
+    LINUX_USER_SCRIPTS_DIR
+} from "../sshUtils";
 
 const AWS_REGION = aws.config.region;
 /**
@@ -18,14 +25,6 @@ const SCHEDULED_EVENT_NAME_PREFIX = "ScheduledEC2Provisioner";
  * permission to invoke the Lambda.
  */
 const LAMBDA_PERMISSION_SID = "sched-event";
-
-/**
- * The path where the Lambda will download/extract the scripts zip file.
- */
-const LOCAL_SCRIPTS_PATH = "/tmp/scripts";
-
-const INSTANCE_USER = "ubuntu";
-const LINUX_USER_SCRIPTS_DIR = `/home/${INSTANCE_USER}/`;
 
 export async function downloadS3Object(bucketName: string, zipFilename: string) {
     const s3 = new aws.sdk.S3({

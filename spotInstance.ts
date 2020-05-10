@@ -1,10 +1,14 @@
 import * as pulumi from "@pulumi/pulumi";
-import * as aws from "@pulumi/aws";
-
-import { Ec2SpotInstance } from "./aws/ec2";
-import { Events } from "./aws/events";
 
 import { AzureSpotVm } from "./azure/vm";
+import { ResourceGroup } from "@pulumi/azure/core";
+import { Account, Container, Blob } from "@pulumi/azure/storage";
+import { AzureEvents } from "./azure/events";
+
+import * as aws from "@pulumi/aws";
+import { Ec2SpotInstance } from "./aws/ec2";
+import { AwsEvents } from "./aws/events";
+
 
 // Get the config ready to go.
 const config = new pulumi.Config();
@@ -32,12 +36,32 @@ export class SpotInstance extends pulumi.ComponentResource {
     }
 
     private createAzureInfra() {
+        const resourceGroupName = "fah-linux";
+        const resourceGroup = new ResourceGroup(resourceGroupName, {
+            name: resourceGroupName,
+        }, { parent: this });
+
+        // The storage to use for storing the workload scripts, as well as
+        // the Azure Functions zip-blob.
+        const storageAccount = new Account(`${this.name}`, {
+            accountReplicationType: "LRS",
+            resourceGroupName: resourceGroup.name,
+            accountTier: "Standard",
+        }, { parent: this });
+
+        const blobContainer = new Container(`${this.name}-cntnr`, {
+            containerAccessType: "private",
+            storageAccountName: storageAccount.name,
+            name: "scripts",
+        }, { parent: storageAccount });
+
         const azureSpotVm = new AzureSpotVm(`${this.name}`, {
-            resourceGroupName: "fah-linux",
+            resourceGroup,
+            publicKey,
+
             // Use Azure VM the price configurator to find the best price.
             // https://azure.microsoft.com/en-us/pricing/details/virtual-machines/linux/
             maxSpotPrice: 0.2,
-            publicKey,
             securityGroupRules: [
                 {
                     name: "AllowSSH",
@@ -68,6 +92,26 @@ export class SpotInstance extends pulumi.ComponentResource {
             ]
         }, { parent: this });
 
+        if (!azureSpotVm.spotInstance) {
+            return;
+        }
+
+        const events = new AzureEvents(`${this.name}-events`, {
+            privateKey,
+            resourceGroup,
+            scriptsContainer: blobContainer,
+            storageAccount,
+            vm: azureSpotVm.spotInstance
+        }, { parent: this });
+
+        const scriptsBlob = new Blob(`${this.name}-blob`, {
+            storageAccountName: storageAccount.name,
+            storageContainerName: blobContainer.name,
+            type: "Block",
+            name: "scripts",
+            source: new pulumi.asset.FileArchive("./scripts")
+        }, { parent: this, dependsOn: events });
+
         this.registerOutputs({
             objectStorage: undefined,
             spotRequestId: azureSpotVm.spotInstance?.id,
@@ -87,7 +131,7 @@ export class SpotInstance extends pulumi.ComponentResource {
             versioning: {
                 enabled: true
             },
-        });
+        }, { parent: this });
 
         const ec2SpotInstance = new Ec2SpotInstance(`${this.name}`, {
             /**
@@ -126,7 +170,7 @@ export class SpotInstance extends pulumi.ComponentResource {
 
         if (ec2SpotInstance && ec2SpotInstance.spotRequest) {
             const zipFileName = "fah-scripts";
-            const events = new Events("fah-events", {
+            const events = new AwsEvents("fah-events", {
                 ec2Security: ec2SpotInstance.ec2Security,
                 spotInstanceRequest: ec2SpotInstance.spotRequest,
                 bucket,

@@ -4,6 +4,12 @@
       "type": "eventGridTrigger",
       "name": "eventGridEvent",
       "direction": "in"
+    },
+    {
+      "name": "inputBlob",
+      "type": "blob",
+      "path": "%scriptsContainer%/{blobName}",
+      "direction": "in"
     }
   ],
   "scriptFile": "../dist/EventGridTrigger1/index.js"

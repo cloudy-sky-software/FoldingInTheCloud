@@ -18,6 +18,9 @@ function isTaggable(type: string): boolean {
         case "aws:lambda/permission:Permission":
         case "aws:s3/bucketNotification:BucketNotification":
         case "azure:network/subnetNatGatewayAssociation:SubnetNatGatewayAssociation":
+        case "azure:storage/container:Container":
+        case "azure:eventgrid/eventSubscription:EventSubscription":
+        case "azure:storage/blob:Blob":
             return false;
         default:
             return true;
