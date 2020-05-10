@@ -4,12 +4,6 @@
       "type": "eventGridTrigger",
       "name": "eventGridEvent",
       "direction": "in"
-    },
-    {
-      "type": "blob",
-      "name": "inputBlob",
-      "path": "{data.url}",
-      "direction": "in"
     }
   ],
   "scriptFile": "../dist/azure/functionapp/EventGridTrigger1/index.js"

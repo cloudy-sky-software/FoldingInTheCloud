@@ -109,6 +109,7 @@ export class SpotInstance extends pulumi.ComponentResource {
             storageContainerName: blobContainer.name,
             type: "Block",
             name: "scripts",
+            contentType: "application/zip",
             source: new pulumi.asset.FileArchive("./scripts")
         }, { parent: resourceGroup, dependsOn: events });
 
