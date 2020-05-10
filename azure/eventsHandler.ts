@@ -4,6 +4,7 @@ import { ResourceGroup } from "@pulumi/azure/core";
 import { ArchiveFunctionApp } from "@pulumi/azure/appservice";
 import { Account, Container } from "@pulumi/azure/storage";
 import { LinuxVirtualMachine } from "@pulumi/azure/compute";
+import { Insights } from "@pulumi/azure/appinsights";
 
 export interface EventsHandlerArgs {
     resourceGroup: ResourceGroup;
@@ -31,6 +32,11 @@ export class EventsHandler extends pulumi.ComponentResource {
             name: "function-app-storage"
         }, { parent: this });
 
+        const ai = new Insights("appinsights", {
+            resourceGroupName: this.args.resourceGroup.name,
+            retentionInDays: 30,
+            applicationType: "Node.JS"
+        }, { parent: this });
         this.functionApp = new ArchiveFunctionApp(`${this.name}-func`, {
             resourceGroup: this.args.resourceGroup,
             // The connection string for this is stored as `AzureWebJobsStorage` automatically
@@ -50,6 +56,7 @@ export class EventsHandler extends pulumi.ComponentResource {
             appSettings: {
                 "scriptsContainer": this.args.scriptsContainer.name,
                 "instancePublicIp": this.args.vm.publicIpAddress,
+                "APPINSIGHTS_INSTRUMENTATIONKEY": ai.instrumentationKey,
             }
         }, { parent: this });
 
