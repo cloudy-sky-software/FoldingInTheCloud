@@ -44,6 +44,8 @@ const eventGridTrigger: AzureFunction = async function (context: Context): Promi
         context.done(err);
         return;
     }
+
+    context.done();
 };
 
 async function provisionInstance(context: Context, conn: ConnectionArgs) {
