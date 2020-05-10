@@ -8,7 +8,9 @@ const eventGridTrigger: AzureFunction = async function (context: Context): Promi
     const eventGridEvent = context.bindings.eventGridEvent;
     context.log(eventGridEvent);
     const inputBlob = context.bindings.inputBlob;
-    const privateKey = process.env["sshPrivateKey"];
+    // Connection strings are made available to functions as environment settings.
+    // https://docs.microsoft.com/en-us/azure/app-service/configure-common#configure-connection-strings
+    const privateKey = process.env["CUSTOMCONNSTR_sshPrivateKey"];
     if (!privateKey) {
         context.done("sshPrivateKey is missing in the environment settings.");
         return;
