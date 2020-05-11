@@ -2,11 +2,6 @@ import * as ssh2 from "ssh2";
 import * as path from "path";
 
 /**
- * The path where the Lambda will download/extract the scripts zip file.
- */
-export const LOCAL_SCRIPTS_PATH = "/tmp/scripts";
-
-/**
  * The user name to use when connecting to the instance.
  */
 export const INSTANCE_USER = "ubuntu";

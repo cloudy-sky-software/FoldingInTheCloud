@@ -8,12 +8,17 @@ import {
     copyFile,
     ConnectionArgs,
     runCommand,
-    LOCAL_SCRIPTS_PATH,
     INSTANCE_USER,
     LINUX_USER_SCRIPTS_DIR
 } from "../sshUtils";
 
 const AWS_REGION = aws.config.region;
+
+/**
+ * The path where the Lambda will download/extract the scripts zip file.
+ */
+const LOCAL_SCRIPTS_PATH = "/tmp/scripts";
+
 /**
  * The name of the scheduled event that is created when copying a file to
  * the EC2 instance fails after several retries. The scheduled event
