@@ -7,6 +7,7 @@ import * as unzipper from "unzipper";
 
 import { copyFile, LINUX_USER_SCRIPTS_DIR, INSTANCE_USER, ConnectionArgs, runCommand } from "../../../sshUtils";
 
+// https://github.com/projectkudu/kudu/wiki/Understanding-the-Azure-App-Service-file-system#temporary-files
 const LOCAL_SCRIPTS_PATH = "D:\\local\\Temp"
 
 const eventGridTrigger: AzureFunction = async function (context: Context): Promise<void> {
