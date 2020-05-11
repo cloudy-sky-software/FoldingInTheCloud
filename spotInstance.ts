@@ -8,6 +8,7 @@ import { AzureEvents } from "./azure/events";
 import * as aws from "@pulumi/aws";
 import { Ec2SpotInstance } from "./aws/ec2";
 import { AwsEvents } from "./aws/events";
+import { storage } from "@pulumi/azure";
 
 
 // Get the config ready to go.
@@ -22,6 +23,10 @@ export interface SpotInstanceArgs { }
 
 export class SpotInstance extends pulumi.ComponentResource {
     private name: string;
+
+    public spotRequestId?: pulumi.Output<string>;
+    public objectStorage?: pulumi.Output<string>;
+
     constructor(name: string, args?: SpotInstanceArgs, opts?: pulumi.ComponentResourceOptions) {
         super("spotInstance", name, undefined, opts);
         this.name = name;
@@ -114,6 +119,8 @@ export class SpotInstance extends pulumi.ComponentResource {
             source: new pulumi.asset.FileArchive("./scripts")
         }, { parent: resourceGroup, dependsOn: events });
 
+        this.objectStorage = storageAccount.name;
+        this.spotRequestId = azureSpotVm.spotInstance?.id;
         this.registerOutputs({
             objectStorage: undefined,
             spotRequestId: azureSpotVm.spotInstance?.id,
@@ -189,6 +196,8 @@ export class SpotInstance extends pulumi.ComponentResource {
             source: new pulumi.asset.FileArchive("./scripts")
         }, { dependsOn: events, parent: bucket });
 
+        this.objectStorage = bucket.bucket;
+        this.spotRequestId = ec2SpotInstance.spotRequest?.id;
         this.registerOutputs({
             objectStorage: bucket.bucket,
             spotRequestId: ec2SpotInstance.spotRequest?.id,
