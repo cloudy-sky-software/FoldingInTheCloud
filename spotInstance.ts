@@ -92,16 +92,17 @@ export class SpotInstance extends pulumi.ComponentResource {
             ]
         }, { parent: resourceGroup, dependsOn: storageAccount });
 
-        if (!azureSpotVm.spotInstance) {
+        if (!azureSpotVm.spotInstance || !azureSpotVm.vmSecurity.securityGroup) {
             return;
         }
 
         const events = new AzureEvents(`${this.name}-events`, {
+            scriptsContainer: blobContainer,
+            securityGroup: azureSpotVm.vmSecurity.securityGroup,
+            vm: azureSpotVm.spotInstance,
             privateKey,
             resourceGroup,
-            scriptsContainer: blobContainer,
             storageAccount,
-            vm: azureSpotVm.spotInstance
         }, { parent: resourceGroup, dependsOn: azureSpotVm });
 
         const scriptsBlob = new Blob(`${this.name}-blob`, {

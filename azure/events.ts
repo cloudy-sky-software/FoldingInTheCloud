@@ -5,12 +5,15 @@ import { Container, Account } from "@pulumi/azure/storage";
 import { LinuxVirtualMachine } from "@pulumi/azure/compute";
 
 import { EventsHandler } from "./eventsHandler";
+import { NetworkSecurityGroup, NetworkSecurityRule } from "@pulumi/azure/network";
 
 export interface EventsArgs {
     resourceGroup: ResourceGroup;
     scriptsContainer: Container;
+    securityGroup: NetworkSecurityGroup;
     storageAccount: Account;
     vm: LinuxVirtualMachine;
+
     privateKey: pulumi.Input<string>;
 }
 
@@ -31,6 +34,27 @@ export class AzureEvents extends pulumi.ComponentResource {
             storageAccount: this.args.storageAccount,
         }, { parent: this });
 
+        const sourceIpAddresses = pulumi
+            .all([handler.functionApp.functionApp.outboundIpAddresses, handler.functionApp.functionApp.possibleOutboundIpAddresses])
+            .apply(([outboundIpAddresses, possibleOutboundIpAddresses]) => {
+                return [...outboundIpAddresses.split(","), ...possibleOutboundIpAddresses.split(",")]
+            });
+        const networkSg = new NetworkSecurityRule(`${this.name}`, {
+            name: "AllowSSHFromFunc",
+            description: "Allow SSH access from Function App.",
+            resourceGroupName: this.args.resourceGroup.name,
+            networkSecurityGroupName: this.args.securityGroup.name,
+            access: "Allow",
+            direction: "Inbound",
+            priority: 500,
+            protocol: "TCP",
+
+            sourcePortRange: "*",
+            sourceAddressPrefixes: sourceIpAddresses,
+
+            destinationAddressPrefix: "*",
+            destinationPortRange: "22",
+        }, { parent: this });
         const functionAppName = handler.functionApp.functionApp.name;
         const functionName = "EventGridTrigger1";
         const systemKey = pulumi.output(handler.functionApp.functionApp.getHostKeys()).apply(keys => keys.systemKeys["eventgrid_extension"]);
