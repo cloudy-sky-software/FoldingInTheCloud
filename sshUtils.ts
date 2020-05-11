@@ -1,22 +1,20 @@
-// Copyright 2016-2019, Pulumi Corporation.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 import * as ssh2 from "ssh2";
 import * as path from "path";
 
-// ConnectionArgs tells a provisioner how to access a remote resource. For example, it may need to use
-// SSH or WinRM to connect to the resource in order to run a command or copy a file.
+/**
+ * The user name to use when connecting to the instance.
+ */
+export const INSTANCE_USER = "ubuntu";
+/**
+ * The path on the instance where the scripts should be copied.
+ */
+export const LINUX_USER_SCRIPTS_DIR = `/home/${INSTANCE_USER}/`;
+
+/**
+ * ConnectionArgs tells a provisioner how to access a remote resource.
+ * For example, it may need to use SSH or WinRM to connect to the
+ * resource in order to run a command or copy a file.
+ */
 export interface ConnectionArgs {
     type?: ConnectionType;
     host: string;
@@ -27,7 +25,10 @@ export interface ConnectionArgs {
     privateKeyPassphrase?: string;
 }
 
-// ConnectionType is the set of legal connection mechanisms to use. Default is SSH.
+/**
+ * ConnectionType is the set of legal connection mechanisms to use.
+ * Default is `ssh`.
+ */
 export type ConnectionType = "ssh" | "winrm";
 
 function connTypeOrDefault(conn: ConnectionArgs): ConnectionType {

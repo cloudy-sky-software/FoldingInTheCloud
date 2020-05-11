@@ -46,4 +46,7 @@ pulumi.all([fahUsername, fahPassKey, fahRemoteControlPass, fahAllowedIP]).apply(
     pulumi.log.info("Updated config.xml");
 });
 
-export const spotInstance = new SpotInstance("fah", {});
+const spotInstance = new SpotInstance("fah", {});
+export const spotRequestId = spotInstance.spotRequestId;
+export const instanceId = spotInstance.instanceId;
+export const objectStorage = spotInstance.objectStorage;

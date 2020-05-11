@@ -1,0 +1,26 @@
+{
+  "name": "functionapp",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "prestart": "npm run build && func extensions install",
+    "start:host": "func start",
+    "start": "npm run start:host & npm run watch",
+    "build:production": "npm run prestart && npm prune --production",
+    "test": "echo \"No tests yet...\""
+  },
+  "dependencies": {
+    "@azure/storage-blob": "^12.1.1",
+    "scp2": "github:spmjs/node-scp2#master",
+    "ssh2": "^0.8.9",
+    "unzipper": "^0.10.11"
+  },
+  "devDependencies": {
+    "@azure/functions": "^1.0.2-beta2",
+    "@types/ssh2": "^0.5.43",
+    "@types/unzipper": "^0.10.3",
+    "typescript": "^3.3.3"
+  }
+}

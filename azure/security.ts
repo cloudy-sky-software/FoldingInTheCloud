@@ -12,7 +12,6 @@ export class AzureSecurity extends pulumi.ComponentResource {
     private args: AzureSecurityArgs;
 
     public publicNic: NetworkInterface | undefined;
-    public privateNic: NetworkInterface | undefined;
     public vnet: VirtualNetwork | undefined;
     public securityGroup: NetworkSecurityGroup | undefined;
 
@@ -27,27 +26,6 @@ export class AzureSecurity extends pulumi.ComponentResource {
             securityGroup: this.securityGroup,
             vnet: this.vnet,
         });
-    }
-
-    private setupPrivateSubnet() {
-        const natPublicIP = new PublicIp(`${this.name}-natPubIp`, {
-            allocationMethod: "Static",
-            resourceGroupName: this.args.resourceGroup.name,
-            // The SKU of the PublicIP and the NAT gateway must match.
-            sku: "Standard",
-            ipVersion: "IPv4",
-            idleTimeoutInMinutes: 4,
-        }, { parent: this });
-        const natGateway = new NatGateway(`${this.name}-natGw`, {
-            resourceGroupName: this.args.resourceGroup.name,
-            idleTimeoutInMinutes: 4,
-            skuName: "Standard",
-            publicIpAddressIds: [natPublicIP.id],
-        }, { parent: this });
-        const natAssociation = new SubnetNatGatewayAssociation(`${this.name}-natAssoc`, {
-            natGatewayId: natGateway.id,
-            subnetId: this.getSubnetId("privateSubnet")
-        }, { parent: this });
     }
 
     private getSubnetId(subnetName: string): pulumi.Output<string> {
@@ -88,17 +66,12 @@ export class AzureSecurity extends pulumi.ComponentResource {
         }, { parent: this });
 
         this.vnet = new VirtualNetwork(`${this.name}-vnet`, {
-            addressSpaces: ["10.10.0.0/16"],
+            addressSpaces: ["10.10.0.0/24"],
             resourceGroupName: this.args.resourceGroup.name,
             subnets: [
                 {
                     name: "publicSubnet",
                     addressPrefix: "10.10.0.0/24",
-                    securityGroup: this.securityGroup.id
-                },
-                {
-                    name: "privateSubnet",
-                    addressPrefix: "10.10.1.0/24",
                     securityGroup: this.securityGroup.id
                 }
             ]
@@ -112,7 +85,7 @@ export class AzureSecurity extends pulumi.ComponentResource {
             ipVersion: "IPv4"
         }, { parent: this });
 
-        this.publicNic = new NetworkInterface(`${this.name}-nic`, {
+        this.publicNic = new NetworkInterface(`${this.name}-pub`, {
             resourceGroupName: this.args.resourceGroup.name,
             ipConfigurations: [
                 {
@@ -124,18 +97,5 @@ export class AzureSecurity extends pulumi.ComponentResource {
                 },
             ],
         }, { parent: this });
-
-        this.privateNic = new NetworkInterface(`${this.name}-priv`, {
-            resourceGroupName: this.args.resourceGroup.name,
-            ipConfigurations: [
-                {
-                    name: "privateIpConfig",
-                    privateIpAddressAllocation: "Dynamic",
-                    subnetId: this.getSubnetId("privateSubnet"),
-                }
-            ]
-        }, { parent: this });
-
-        // this.setupPrivateSubnet();
     }
 }

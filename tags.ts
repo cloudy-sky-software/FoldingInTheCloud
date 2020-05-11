@@ -17,7 +17,12 @@ function isTaggable(type: string): boolean {
         case "aws:cloudwatch/eventTarget:EventTarget":
         case "aws:lambda/permission:Permission":
         case "aws:s3/bucketNotification:BucketNotification":
+
         case "azure:network/subnetNatGatewayAssociation:SubnetNatGatewayAssociation":
+        case "azure:storage/container:Container":
+        case "azure:eventgrid/eventSubscription:EventSubscription":
+        case "azure:storage/blob:Blob":
+        case "azure:network/networkSecurityRule:NetworkSecurityRule":
             return false;
         default:
             return true;
