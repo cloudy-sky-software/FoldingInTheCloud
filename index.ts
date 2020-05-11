@@ -48,4 +48,5 @@ pulumi.all([fahUsername, fahPassKey, fahRemoteControlPass, fahAllowedIP]).apply(
 
 const spotInstance = new SpotInstance("fah", {});
 export const spotRequestId = spotInstance.spotRequestId;
+export const instanceId = spotInstance.instanceId;
 export const objectStorage = spotInstance.objectStorage;

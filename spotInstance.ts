@@ -25,6 +25,7 @@ export class SpotInstance extends pulumi.ComponentResource {
     private name: string;
 
     public spotRequestId?: pulumi.Output<string>;
+    public instanceId?: pulumi.Output<string>;
     public objectStorage?: pulumi.Output<string>;
 
     constructor(name: string, args?: SpotInstanceArgs, opts?: pulumi.ComponentResourceOptions) {
@@ -120,7 +121,7 @@ export class SpotInstance extends pulumi.ComponentResource {
         }, { parent: resourceGroup, dependsOn: events });
 
         this.objectStorage = storageAccount.name;
-        this.spotRequestId = azureSpotVm.spotInstance?.id;
+        this.instanceId = azureSpotVm.spotInstance?.id;
         this.registerOutputs({
             objectStorage: undefined,
             spotRequestId: azureSpotVm.spotInstance?.id,
