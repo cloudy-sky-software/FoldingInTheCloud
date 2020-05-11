@@ -73,7 +73,7 @@ export class SpotInstance extends pulumi.ComponentResource {
                     sourcePortRange: "*",
                     sourceAddressPrefix: pulumi.interpolate`${fahAllowedIP}/32`,
 
-                    destinationAddressPrefix: "*",
+                    destinationAddressPrefix: "VirtualNetwork",
                     destinationPortRange: "22",
                 },
                 {

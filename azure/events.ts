@@ -52,7 +52,7 @@ export class AzureEvents extends pulumi.ComponentResource {
             sourcePortRange: "*",
             sourceAddressPrefixes: sourceIpAddresses,
 
-            destinationAddressPrefix: "*",
+            destinationAddressPrefix: "VirtualNetwork",
             destinationPortRange: "22",
         }, { parent: this });
         const functionAppName = handler.functionApp.functionApp.name;
