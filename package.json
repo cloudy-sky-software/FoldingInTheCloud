@@ -14,10 +14,10 @@
         "typescript": "^3.8.3"
     },
     "dependencies": {
-        "@pulumi/aws": "^2.3.0",
+        "@pulumi/aws": "^2.4.0",
         "@pulumi/awsx": "^0.20.0",
-        "@pulumi/azure": "^3.4.0",
-        "@pulumi/pulumi": "^2.1.0",
+        "@pulumi/azure": "^3.5.1",
+        "@pulumi/pulumi": "^2.2.1",
         "axios": "^0.19.2",
         "scp2": "github:spmjs/node-scp2#master",
         "ssh2": "^0.8.9",
