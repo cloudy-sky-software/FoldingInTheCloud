@@ -35,7 +35,7 @@ jobs:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
-      PULUMI_STACK_NAME: aws
+      PULUMI_STACK_NAME: ${{ secrets.PULUMI_STACK_NAME }}
     runs-on: ubuntu-latest
 
     steps:
