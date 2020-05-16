@@ -60,7 +60,9 @@ jobs:
     - name: Restore npm dependencies
       run: |
         npm ci
-        npm ci --prefix ./azure/functionapp
+        echo "Restoring Azure Functions app dependencies..."
+        cd ./azure/functionapp
+        npm ci
 
     - name: Get stack outputs
       id: set-stack-output
