@@ -69,20 +69,21 @@ jobs:
     - name: Preview changes for all stacks
       run: |
         echo "Previewing AWS stack..."
-        pulumi preview -s aws
+        npm run preview -- -s aws
 
         echo "Previewing Azure stack..."
-        pulumi preview -s azure
+        npm run buildAzFuncApp
+        npm run preview -- -s azure
       if: github.event_name == 'pull_request' || steps.set-stack-output.outputs.stackOutput == '{}'
 
     # Always run an update for a push build, IFF the stack already has resources.
     - name: Update infrastructure
-      run: pulumi up --yes -s ${PULUMI_STACK_NAME}
+      run: npm run ${PULUMI_STACK_NAME} -- --yes
       if: github.event_name == 'push' && steps.set-stack-output.outputs.stackOutput != '{}'
       
     # If this is a scheduled execution, and it is a Saturday, run the update to create the resources.
     - name: Create infrastructure 
-      run: pulumi up --yes -s ${PULUMI_STACK_NAME}
+      run: npm run ${PULUMI_STACK_NAME} -- --yes
       if: github.event_name == 'schedule' && steps.current-time.outputs.formattedTime == 'Sat'
     
     # If this is a scheduled execution, and it is a Monday, destroy the resources.
@@ -106,8 +107,8 @@ jobs:
         echo "Sleeping for 30s..."
         sleep 30
 
-        pulumi destroy --yes -s ${PULUMI_STACK_NAME}
+        npm run destroy -- --yes -s ${PULUMI_STACK_NAME}
     
     - name: Destroy Azure infrastructure
       if: env.PULUMI_STACK_NAME == 'azure' && github.event_name == 'schedule' && steps.current-time.outputs.formattedTime == 'Mon'
-      run: pulumi destroy --yes -s ${PULUMI_STACK_NAME}
+      run: npm run destroy -- --yes -s ${PULUMI_STACK_NAME}

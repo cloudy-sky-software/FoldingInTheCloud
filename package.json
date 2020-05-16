@@ -3,7 +3,9 @@
     "scripts": {
         "azure": "npm run buildAzFuncApp && pulumi up -s azure",
         "aws": "pulumi up -s aws",
-        "buildAzFuncApp": "cd ./azure/functionapp && npm run build:production"
+        "buildAzFuncApp": "cd ./azure/functionapp && npm run build:production",
+        "destroy": "pulumi destroy",
+        "preview": "pulumi preview"
     },
     "devDependencies": {
         "@types/node": "^13.13.1",
