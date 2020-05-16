@@ -18,7 +18,7 @@
     "unzipper": "^0.10.11"
   },
   "devDependencies": {
-    "@azure/functions": "^1.0.2-beta2",
+    "@azure/functions": "^1.2.0",
     "@types/ssh2": "^0.5.43",
     "@types/unzipper": "^0.10.3",
     "typescript": "^3.3.3"

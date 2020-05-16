@@ -58,7 +58,9 @@ jobs:
       uses: pulumi/action-install-pulumi-cli@releases/v1
 
     - name: Restore npm dependencies
-      run: npm ci
+      run: |
+        npm ci
+        npm ci --prefix ./azure/functionapp
 
     - name: Get stack outputs
       id: set-stack-output
