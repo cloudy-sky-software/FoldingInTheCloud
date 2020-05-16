@@ -36,7 +36,16 @@ fi
 # Stop the FAHClient service before overriding the config and then start it back up.
 sudo /etc/init.d/FAHClient stop
 sudo cp ~/config.xml /etc/fahclient/config.xml
-sudo /etc/init.d/FAHClient start || exit 1
+>/dev/null sudo /etc/init.d/FAHClient start || {
+    STATUS=$(sudo /etc/init.d/FAHClient status)
+    if [ "${STATUS}" = "fahclient is not running" ]; then
+        echo "${STATUS}"
+        exit 1
+    fi
+
+    echo "Done."
+    exit 0
+}
 
 IS_ACTIVE=$(systemctl is-active FAHClient)
 if [ "${IS_ACTIVE}" = "active" ]; then
