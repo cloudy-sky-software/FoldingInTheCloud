@@ -195,7 +195,7 @@ export class SpotInstance extends pulumi.ComponentResource {
             key: zipFileName,
             serverSideEncryption: "AES256",
             source: new pulumi.asset.FileArchive("./scripts")
-        }, { dependsOn: events, parent: bucket });
+        }, { dependsOn: events });
 
         this.objectStorage = bucket.bucket;
         this.spotRequestId = ec2SpotInstance.spotRequest?.id;

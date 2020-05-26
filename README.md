@@ -1,12 +1,28 @@
-# Deploy Spot Instances on AWS EC2 Using Pulumi
+# Folding In The Cloud
 
-A Pulumi-based infrastructure app for deloying EC2 Spot Instance for running Folding@Home client.
+A Pulumi app for deloying Spot instances that run the [Folding@Home](https://foldingathome.org) client.
 
 See https://foldingforum.org/viewtopic.php?f=24&t=32463&fbclid=IwAR1v8Z_2VbB__5izLF989xPRRg9WIYzbd9d5gkfAaP3jCPdkcJbeyUpIt-U.
 
 ## Introduction
 
-This app establishes SSH2 tunnel to copy and execute provisioning scripts in order to install Halyard on the EC2 instance. Any time the scripts are changed, subsequent `pulumi up` would copy/execute the scripts again.
+There are two stacks:
+* `aws`
+* `azure`
+
+..for, you guessed it, deploying infrastructure on AWS and Azure.
+
+The infrastructure setup between the two stacks are kept as similar as possible.
+
+However, there are some differences.
+
+### Difference 1 (VPC configuration)
+
+For example, in the AWS infrastructure, both the event handler (Lambda) and the EC2 Spot instance are in a VPC. Whereas, in the Azure infrastructure, creating an Azure Functions app in a VNET requires a Premium plan. So instead, the network security rules for the Azure Spot VM is restricted to only allow certain IP addresses to connect via SSH port 22. This is still not entirely secure from a security standpoint because the Function App IP addresses are not "dedicated" IP addresses. So technically any Function App also running on those hosts _could_ potentially try to connect to our Spot VM. However, the chances for that are really slim. In addition, we are also using an SSH private key only we have access to.
+
+### Difference 2 (Event handling)
+
+In AWS, the Lambda handler can receive events from the EC2 service as well as the S3 bucket object change notification. However, in Azure, there is no concept of "listening" to events from VM changes. Instead, there is a metadata service called "Scheduled Events" that needs to be constantly monitored and is only accessible from within the VM. So the event handler (Azure Functions) in the Azure infrastructure setup, only relies on Azure Storage blob notifications through the use of Event Grid subscriptions.
 
 ## Running the app
 
