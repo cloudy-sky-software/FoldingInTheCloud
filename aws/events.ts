@@ -16,9 +16,6 @@ export class AwsEvents extends pulumi.ComponentResource {
     constructor(name: string, args: EventsArgs, opts?: pulumi.ComponentResourceOptions) {
         super("aws:events", name, undefined, opts);
 
-        pulumi.all([args.spotInstanceRequest.id, args.bucket.bucket]).apply(([spotInstanceRequestId, bucketName]) => {
-
-        });
         const handler = new EventsHandler("fah", {
             ec2Security: args.ec2Security,
             bucketName: args.bucket.bucket,
