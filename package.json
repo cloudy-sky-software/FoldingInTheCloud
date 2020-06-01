@@ -12,14 +12,14 @@
         "@types/ssh2": "^0.5.43",
         "@types/sshpk": "^1.10.4",
         "@types/unzipper": "^0.10.3",
-        "@types/uuid": "^7.0.2",
+        "@types/uuid": "^8.0.0",
         "typescript": "^3.8.3"
     },
     "dependencies": {
-        "@pulumi/aws": "^2.4.0",
+        "@pulumi/aws": "^2.6.1",
         "@pulumi/awsx": "^0.20.0",
-        "@pulumi/azure": "^3.5.1",
-        "@pulumi/pulumi": "^2.2.1",
+        "@pulumi/azure": "^3.6.1",
+        "@pulumi/pulumi": "^2.3.0",
         "axios": "^0.19.2",
         "scp2": "github:spmjs/node-scp2#master",
         "ssh2": "^0.8.9",
