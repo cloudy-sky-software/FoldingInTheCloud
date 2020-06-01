@@ -155,7 +155,13 @@ export class EventsHandler extends pulumi.ComponentResource {
                     format: "pem",
                 }
             };
-            if (e.hasOwnProperty("source") && e.source === "aws.ec2" && e.detail["instance-action"] === "terminate") {
+            // If the instance is either interrupted due to a price change or terminated due to a scheduled termination,
+            // we should give the chance to "deprovision" the instance, so run the selected deprovision script in the
+            // instance.
+            if (e.hasOwnProperty("source") &&
+                e.source === "aws.ec2" &&
+                (e.detail["instance-action"] === "terminate" ||
+                    e.detail["state"] === "shutting-down")) {
                 const p = new Promise((resolve, reject) => {
                     generateKeyPair("rsa", keypairSettings, async (err: any, publicKey: string, privateKey: string) => {
                         if (err) {

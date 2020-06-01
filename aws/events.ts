@@ -35,7 +35,7 @@ export class AwsEvents extends pulumi.ComponentResource {
                 "source": ["aws.ec2"],
                 "detail-type": ["EC2 Instance State-change Notification"],
                 "detail": {
-                    "state": ["running"]
+                    "state": ["running", "shutting-down"]
                 }
             }),
         }, { parent: this });
