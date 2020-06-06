@@ -190,13 +190,6 @@ export class SpotInstance extends pulumi.ComponentResource {
             zipFileName,
         }, { dependsOn: ec2SpotInstance, parent: this });
 
-        const bucketObject = new aws.s3.BucketObject("fah-scripts", {
-            bucket: bucket,
-            key: zipFileName,
-            serverSideEncryption: "AES256",
-            source: new pulumi.asset.FileArchive("./scripts")
-        }, { parent: events });
-
         this.objectStorage = bucket.bucket;
         this.spotRequestId = ec2SpotInstance.spotRequest?.id;
         this.registerOutputs({

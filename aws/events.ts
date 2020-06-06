@@ -52,7 +52,13 @@ export class AwsEvents extends pulumi.ComponentResource {
 
         eventRule.onEvent(`${name}-interruption-sub`, handler.callbackFunction, undefined, { parent: this });
 
+        const bucketObject = new aws.s3.BucketObject("fah-scripts", {
+            bucket: args.bucket,
+            key: args.zipFileName,
+            serverSideEncryption: "AES256",
+            source: new pulumi.asset.FileArchive("../scripts")
+        }, { parent: this });
+
         this.registerOutputs({});
     }
 }
-
