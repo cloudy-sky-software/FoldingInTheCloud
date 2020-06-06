@@ -56,7 +56,7 @@ export class AwsEvents extends pulumi.ComponentResource {
             bucket: args.bucket,
             key: args.zipFileName,
             serverSideEncryption: "AES256",
-            source: new pulumi.asset.FileArchive("../scripts")
+            source: new pulumi.asset.FileArchive("./scripts")
         }, { parent: this });
 
         this.registerOutputs({});
