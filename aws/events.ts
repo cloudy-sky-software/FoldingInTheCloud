@@ -13,6 +13,8 @@ export interface EventsArgs {
 }
 
 export class AwsEvents extends pulumi.ComponentResource {
+    public bucketObjectSubscription: aws.s3.BucketEventSubscription | undefined;
+
     constructor(name: string, args: EventsArgs, opts?: pulumi.ComponentResourceOptions) {
         super("aws:events", name, undefined, opts);
 
@@ -27,7 +29,7 @@ export class AwsEvents extends pulumi.ComponentResource {
             return;
         }
 
-        args.bucket.onObjectCreated("fah-object-created", handler.callbackFunction, undefined, { parent: this });
+        this.bucketObjectSubscription = args.bucket.onObjectCreated("fah-object-created", handler.callbackFunction, undefined, { parent: this });
 
         const instanceRunningEvent = new aws.cloudwatch.EventRule(`${name}-inst-running`, {
             description: "Event rule for Spot Instance request fulfillment.",
@@ -51,13 +53,6 @@ export class AwsEvents extends pulumi.ComponentResource {
         }, { parent: this });
 
         eventRule.onEvent(`${name}-interruption-sub`, handler.callbackFunction, undefined, { parent: this });
-
-        const bucketObject = new aws.s3.BucketObject("fah-scripts", {
-            bucket: args.bucket,
-            key: args.zipFileName,
-            serverSideEncryption: "AES256",
-            source: new pulumi.asset.FileArchive("./scripts")
-        }, { parent: this });
 
         this.registerOutputs({});
     }
