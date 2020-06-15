@@ -190,6 +190,35 @@ export class SpotInstance extends pulumi.ComponentResource {
             zipFileName,
         }, { dependsOn: ec2SpotInstance, parent: this });
 
+        // Create the BucketObject just before we exit the process, because the BucketNotification
+        // resource itself is created on process exit. If we didn't do this, the BucketObject
+        // will always be created _before_ the BucketNotification exists and therefore, there wouldn't
+        // be anything to handle the notification. With this trick, we are delaying the creation of the
+        // BucketObject to after the BucketNotification is created, which itself is created via a process
+        // `beforeExit` handler.
+        // See https://github.com/pulumi/pulumi-aws/blob/master/sdk/nodejs/s3/s3Mixins.ts#L187.
+        const bucketObjectOpts: pulumi.CustomResourceOptions = {
+            parent: this,
+            dependsOn: events,
+        };
+        // Use a flag to indicate that the BucketObject resource was already created.
+        // Otherwise, when we enter the handler for the `beforeExit` event, we will
+        // once again try to create the same resource because `beforeExit` would be invoked
+        // anytime the Node process queue empties-out.
+        let bucketObjectCreated = false;
+        process.on("beforeExit", () => {
+            if (bucketObjectCreated) {
+                return;
+            }
+            const bucketObject = new aws.s3.BucketObject("fah-scripts", {
+                bucket: bucket,
+                key: zipFileName,
+                serverSideEncryption: "AES256",
+                source: new pulumi.asset.FileArchive("./scripts")
+            }, bucketObjectOpts);
+            bucketObjectCreated = true;
+        });
+
         this.objectStorage = bucket.bucket;
         this.spotRequestId = ec2SpotInstance.spotRequest?.id;
         this.registerOutputs({
