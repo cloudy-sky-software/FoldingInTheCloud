@@ -1,4 +1,5 @@
 import * as pulumi from "@pulumi/pulumi";
+import * as random from "@pulumi/random";
 
 import * as ssh2 from "ssh2";
 import { ParsedKey } from "ssh2-streams";
@@ -27,7 +28,14 @@ pulumi.all([privateKey, privateKeyPassphrase]).apply(([prKey, pass]) => {
 
 const fahPassKey = config.requireSecret("fahPassKey");
 const fahUsername = config.require("fahUsername");
-const fahRemoteControlPass = config.requireSecret("fahRemoteControlPass");
+const randomPassword = new random.RandomPassword("fahRandomPassword", {
+    length: 12,
+    special: true,
+    upper: true,
+    number: true,
+    lower: true,
+});
+export const fahRemoteControlPass = randomPassword.result;
 const fahAllowedIP = config.requireSecret("fahAllowedIP");
 
 // Transform the FAH config.xml with the stack config properties provided by the user.
