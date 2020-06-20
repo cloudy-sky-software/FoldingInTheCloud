@@ -35,7 +35,7 @@ const randomPassword = new random.RandomPassword("fahRandomPassword", {
     number: true,
     lower: true,
 });
-export const fahRemoteControlPass = randomPassword.result;
+export const fahRemoteControlPass = pulumi.secret(randomPassword.result);
 const fahAllowedIP = config.requireSecret("fahAllowedIP");
 
 // Transform the FAH config.xml with the stack config properties provided by the user.
