@@ -23,6 +23,8 @@ function isTaggable(type: string): boolean {
         case "azure:eventgrid/eventSubscription:EventSubscription":
         case "azure:storage/blob:Blob":
         case "azure:network/networkSecurityRule:NetworkSecurityRule":
+
+        case "random:index/randomPassword:RandomPassword":
             return false;
         default:
             return true;
