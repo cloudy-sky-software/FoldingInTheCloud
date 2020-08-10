@@ -34,6 +34,7 @@ const randomPassword = new random.RandomPassword("fahRandomPassword", {
     upper: true,
     number: true,
     lower: true,
+    overrideSpecial: "!@#$%^*()",
 });
 export const fahRemoteControlPass = pulumi.secret(randomPassword.result);
 const fahAllowedIP = config.requireSecret("fahAllowedIP");
