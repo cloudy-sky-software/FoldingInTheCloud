@@ -1,16 +1,19 @@
 name: CI
 
 on:
-  push:
-    branches: [ master ]
-
   pull_request:
     branches: [ master ]
-
-  schedule:
-    # * is a special character in YAML so you have to quote this string.
-    # Run every Saturday and Monday at 9AM UTC.
-    - cron:  '0 9 * * Sat,Mon'
+  
+  workflow_dispatch:
+    inputs:
+      stackName:
+        description: 'Pulumi stack name'     
+        required: true
+        default: 'aws'
+      pulumiCommand:
+        description: 'Possible values are create, update or destroy'
+        default: 'update'
+        required: true
 
 jobs:
   turnstyle:
@@ -35,7 +38,7 @@ jobs:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
-      PULUMI_STACK_NAME: ${{ secrets.PULUMI_STACK_NAME }}
+      PULUMI_STACK_NAME: ${{ github.event.inputs.stackName }}
     runs-on: ubuntu-latest
 
     steps:
@@ -92,16 +95,16 @@ jobs:
     # Always run an update for a push build, IFF the stack already has resources.
     - name: Update infrastructure
       run: npm run ${PULUMI_STACK_NAME} -- --yes
-      if: github.event_name == 'push' && steps.set-stack-output.outputs.stackOutput != '{}'
+      if: github.event_name == 'workflow_dispatch' && steps.set-stack-output.outputs.stackOutput != '{}' && github.event.inputs.pulumiCommand == 'update'
       
     # If this is a scheduled execution, and it is a Saturday, run the update to create the resources.
     - name: Create infrastructure 
       run: npm run ${PULUMI_STACK_NAME} -- --yes
-      if: github.event_name == 'schedule' && steps.current-time.outputs.formattedTime == 'Sat'
+      if: github.event_name == 'workflow_dispatch' && github.event.inputs.pulumiCommand == 'create'
     
     # If this is a scheduled execution, and it is a Monday, destroy the resources.
     - name: Destroy AWS infrastructure
-      if: env.PULUMI_STACK_NAME == 'aws' && github.event_name == 'schedule' && steps.current-time.outputs.formattedTime == 'Mon'
+      if: env.PULUMI_STACK_NAME == 'aws' && github.event_name == 'workflow_dispatch' && github.event.inputs.pulumiCommand == 'destroy'
       run: |
         # First terminate the EC2 instance that fulfilled the Spot Instance Request (SIR).
         # To do that, we should first query for the instance ID from the SIR.
@@ -123,5 +126,5 @@ jobs:
         npm run destroy -- --yes -s ${PULUMI_STACK_NAME}
     
     - name: Destroy Azure infrastructure
-      if: env.PULUMI_STACK_NAME == 'azure' && github.event_name == 'schedule' && steps.current-time.outputs.formattedTime == 'Mon'
+      if: env.PULUMI_STACK_NAME == 'azure' && github.event_name == 'workflow_dispatch' && github.event.inputs.pulumiCommand == 'destroy'
       run: npm run destroy -- --yes -s ${PULUMI_STACK_NAME}
