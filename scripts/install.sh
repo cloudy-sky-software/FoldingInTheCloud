@@ -3,7 +3,7 @@
 echo "Launching FAH installation script..."
 
 MAJOR_MINOR_VERSION=7.6
-PATCH_VERSION=13
+PATCH_VERSION=21
 VERSION=${MAJOR_MINOR_VERSION}.${PATCH_VERSION}
 
 install_fah_client() {
@@ -20,7 +20,7 @@ cat /proc/driver/nvidia/version || {
     exit 1
 }
 
->/dev/null 2>/dev/null which FAHClient || {
+which >/dev/null 2>/dev/null FAHClient || {
     echo "FAHClient not detected. Installing..."
     install_fah_client
 }
@@ -36,7 +36,7 @@ fi
 # Stop the FAHClient service before overriding the config and then start it back up.
 sudo /etc/init.d/FAHClient stop
 sudo cp ~/config.xml /etc/fahclient/config.xml
->/dev/null sudo /etc/init.d/FAHClient start || {
+sudo >/dev/null /etc/init.d/FAHClient start || {
     STATUS=$(sudo /etc/init.d/FAHClient status)
     if [ "${STATUS}" = "fahclient is not running" ]; then
         echo "${STATUS}"
