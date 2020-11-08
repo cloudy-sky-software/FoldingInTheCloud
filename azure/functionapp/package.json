@@ -12,7 +12,7 @@
     "test": "echo \"No tests yet...\""
   },
   "dependencies": {
-    "@azure/storage-blob": "^12.1.1",
+    "@azure/storage-blob": "^12.2.1",
     "scp2": "github:spmjs/node-scp2#master",
     "ssh2": "^0.8.9",
     "unzipper": "^0.10.11"
