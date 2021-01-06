@@ -21,7 +21,7 @@
         "@pulumi/azure": "^3.30.0",
         "@pulumi/pulumi": "^2.13.2",
         "@pulumi/random": "^2.4.1",
-        "axios": "^0.19.2",
+        "axios": "^0.21.1",
         "scp2": "github:spmjs/node-scp2#master",
         "ssh2": "^0.8.9",
         "sshpk": "^1.16.1",
