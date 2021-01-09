@@ -31,6 +31,12 @@ const SCHEDULED_EVENT_NAME_PREFIX = "ScheduledEC2Provisioner";
  */
 const LAMBDA_PERMISSION_SID = "sched-event";
 
+/**
+ * Downloads an object from an S3 bucket and extract it to a temporary
+ * path accessible to AWS Lamda service.
+ * @param bucketName 
+ * @param zipFilename 
+ */
 export async function downloadS3Object(bucketName: string, zipFilename: string) {
     const s3 = new aws.sdk.S3({
         region: AWS_REGION,
@@ -110,6 +116,12 @@ export async function getInstanceInfo(instanceId: string): Promise<Instance> {
     return describeInstanceResult.Reservations[0].Instances[0];
 }
 
+/**
+ * Sends the SSH public key to an EC2 instance to facilitate connecting to that instance
+ * via SSH later using the private key counterpart.
+ * @param instance The EC2 instance object to which the SSH public key needs to be sent. 
+ * @param publicKey
+ */
 export async function sendSSHPublicKeyToInstance(instance: Instance, publicKey: string) {
     console.log("Sending SSH public key to the EC2 instance...");
     const ec2 = new aws.sdk.EC2InstanceConnect({
@@ -129,10 +141,21 @@ export async function sendSSHPublicKeyToInstance(instance: Instance, publicKey: 
     console.log("SSH public key sent.");
 }
 
+/**
+ * Returns a formatted name for the scheduled event to be created. Use this to find
+ * corresponding scheduled events for spot instance requests.
+ * @param spotInstanceRequestId 
+ */
 function getScheduledEventRuleName(spotInstanceRequestId: string): string {
     return `${SCHEDULED_EVENT_NAME_PREFIX}_${spotInstanceRequestId}`;
 }
 
+/**
+ * Create a fixed-rate scheduled event, if it doesn't exist, that will attempt to provision the spot instance
+ * identified by the spot instance request ID.
+ * @param ctx The Lambda context object.
+ * @param spotInstanceRequestId
+ */
 async function checkAndCreateScheduledEvent(ctx: Context, spotInstanceRequestId: string) {
     const cw = new aws.sdk.CloudWatchEvents({
         region: AWS_REGION,
@@ -183,6 +206,12 @@ async function checkAndCreateScheduledEvent(ctx: Context, spotInstanceRequestId:
     }).promise();
 }
 
+/**
+ * Deletes the scheduled event, if found. Also removes the associated Lambda permission
+ * resource.
+ * @param ctx The Lambda context object.
+ * @param spotInstanceRequestId 
+ */
 async function deleteScheduledEvent(ctx: Context, spotInstanceRequestId: string) {
     const cw = new aws.sdk.CloudWatchEvents({
         region: AWS_REGION,

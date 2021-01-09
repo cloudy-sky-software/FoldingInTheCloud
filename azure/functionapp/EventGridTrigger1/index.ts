@@ -40,7 +40,7 @@ const eventGridTrigger: AzureFunction = async function (context: Context): Promi
         return;
     }
 
-    const p = new Promise((resolve, reject) => {
+    const p = new Promise<void>((resolve, reject) => {
         inputBlob.readableStreamBody!
             .pipe(unzipper.Extract({ path: LOCAL_SCRIPTS_PATH })).on("error", (err) => {
                 context.log("File Stream error:", err);

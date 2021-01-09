@@ -12,6 +12,12 @@ export interface EventsArgs {
     zipFileName: string;
 }
 
+/**
+ * Creates an `EventHandler` instance and subscribes it to the following events:
+ * - EC2 events [`running`, `shutting-down`]
+ * - Spot instance interruption warning
+ * - S3 object creation
+ */
 export class AwsEvents extends pulumi.ComponentResource {
     constructor(name: string, args: EventsArgs, opts?: pulumi.ComponentResourceOptions) {
         super("aws:events", name, undefined, opts);

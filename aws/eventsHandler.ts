@@ -24,6 +24,11 @@ export interface LambdaProvisionerArgs {
     zipFilename: string;
 }
 
+/**
+ * Creates an AWS Lambda function that handles various events.
+ * Specifically, the Lambda is used to provision an instance fulfilled
+ * by a Spot Instance Request or to deprovision it.
+ */
 export class EventsHandler extends pulumi.ComponentResource {
     private name: string;
     private args: LambdaProvisionerArgs;
@@ -162,7 +167,7 @@ export class EventsHandler extends pulumi.ComponentResource {
                 e.source === "aws.ec2" &&
                 (e.detail["instance-action"] === "terminate" ||
                     e.detail["state"] === "shutting-down")) {
-                const p = new Promise((resolve, reject) => {
+                const p = new Promise<void>((resolve, reject) => {
                     generateKeyPair("rsa", keypairSettings, async (err: any, publicKey: string, privateKey: string) => {
                         if (err) {
                             reject(err);
@@ -181,14 +186,14 @@ export class EventsHandler extends pulumi.ComponentResource {
             }
 
             await downloadS3Object(bucketName.get(), zipFilename);
-            const p = new Promise((resolve, reject) => {
+            const p = new Promise<void>((resolve, reject) => {
                 generateKeyPair("rsa", keypairSettings, async (err: any, publicKey: string, privateKey: string) => {
                     if (err) {
                         reject(err);
                         return;
                     }
 
-                    // Convert the public to an OpenSSH public key format.
+                    // Convert the public key to an OpenSSH public key format.
                     const sshPublicKey = sshpk.parseKey(publicKey, "pem").toString("ssh");
                     await sendSSHPublicKeyToInstance(instance, sshPublicKey);
                     await provisionInstance(ctx, spotInstanceRequestId.get(), instance.PrivateIpAddress!, privateKey);

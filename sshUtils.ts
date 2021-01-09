@@ -85,7 +85,7 @@ export async function copyFile(conn: ConnectionArgs, src: string, dest: string):
     }
 
     const scp2 = require("scp2");
-    const mkdirPromise = new Promise((resolve, reject) => {
+    const mkdirPromise = new Promise<void>((resolve, reject) => {
         scp2.defaults({ ...connToSsh2(conn) });
         scp2.mkdir(path.dirname(dest), (err: any) => {
             if (!err) {
@@ -98,7 +98,7 @@ export async function copyFile(conn: ConnectionArgs, src: string, dest: string):
     });
     let connectionFailCount = 0;
     return mkdirPromise.then(() => {
-        return new Promise((resolve, reject) => {
+        return new Promise<void>((resolve, reject) => {
             function scp() {
                 scp2.scp(
                     src,
@@ -122,7 +122,7 @@ export async function copyFile(conn: ConnectionArgs, src: string, dest: string):
     });
 }
 
-export async function runCommand(conn: ConnectionArgs, cmd: string): Promise<string> {
+export async function runCommand(conn: ConnectionArgs, cmd: string): Promise<void> {
     const connType = connTypeOrDefault(conn);
     if (connType !== "ssh") {
         throw new Error("only SSH connection types currently supported");
@@ -130,7 +130,7 @@ export async function runCommand(conn: ConnectionArgs, cmd: string): Promise<str
 
     const sshConn = connToSsh2(conn);
     let connectionFailCount = 0;
-    return new Promise((resolve, reject) => {
+    return new Promise<void>((resolve, reject) => {
         const conn = new ssh2.Client();
         function connect() {
             conn.on("ready", () => {
