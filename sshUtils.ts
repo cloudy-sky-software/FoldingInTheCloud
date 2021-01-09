@@ -1,5 +1,6 @@
-import * as ssh2 from "ssh2";
 import * as path from "path";
+
+import * as ssh2 from "ssh2";
 
 /**
  * The user name to use when connecting to the instance.
@@ -35,19 +36,19 @@ function connTypeOrDefault(conn: ConnectionArgs): ConnectionType {
     return conn.type || "ssh";
 }
 
-function connPortOrDefault(conn: ConnectionArgs): number {
+function _connPortOrDefault(conn: ConnectionArgs): number {
     if (conn.port !== undefined) {
         return conn.port;
     }
 
     const connType = connTypeOrDefault(conn);
     switch (connType) {
-        case "ssh":
-            return 22;
-        case "winrm":
-            return 5985;
-        default:
-            throw new Error(`unrecognized connectiont ype ${connType}`);
+    case "ssh":
+        return 22;
+    case "winrm":
+        return 5985;
+    default:
+        throw new Error(`unrecognized connectiont ype ${connType}`);
     }
 }
 
@@ -58,12 +59,12 @@ function connUsernameOrDefault(conn: ConnectionArgs): string {
 
     const connType = connTypeOrDefault(conn);
     switch (connType) {
-        case "ssh":
-            return "root";
-        case "winrm":
-            return "Administrator";
-        default:
-            throw new Error(`unrecognized connectiont ype ${connType}`);
+    case "ssh":
+        return "root";
+    case "winrm":
+        return "Administrator";
+    default:
+        throw new Error(`unrecognized connectiont ype ${connType}`);
     }
 }
 
@@ -84,6 +85,7 @@ export async function copyFile(conn: ConnectionArgs, src: string, dest: string):
         throw new Error("only SSH connection types currently supported");
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const scp2 = require("scp2");
     const mkdirPromise = new Promise<void>((resolve, reject) => {
         scp2.defaults({ ...connToSsh2(conn) });
@@ -139,7 +141,7 @@ export async function runCommand(conn: ConnectionArgs, cmd: string): Promise<voi
                         reject(err);
                         return;
                     }
-                    stream.on("close", (code: string, signal: string) => {
+                    stream.on("close", (code: string, _signal: string) => {
                         conn.end();
                         if (code) {
                             reject(new Error("Command exited with " + code));

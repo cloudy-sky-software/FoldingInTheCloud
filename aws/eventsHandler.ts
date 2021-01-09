@@ -1,21 +1,21 @@
-import * as pulumi from "@pulumi/pulumi";
+import { RSAKeyPairOptions, generateKeyPair } from "crypto";
+
 import * as aws from "@pulumi/aws";
-
 import { Context } from "@pulumi/aws/lambda";
+import * as pulumi from "@pulumi/pulumi";
 
+import { Instance } from "aws-sdk/clients/ec2";
 import * as sshpk from "sshpk";
-import { generateKeyPair, RSAKeyPairOptions } from "crypto";
 
 import {
-    sendSSHPublicKeyToInstance,
     downloadS3Object,
+    getInstanceInfo,
     getSpotInstance,
     provisionInstance,
     runShutdownScript,
-    getInstanceInfo
+    sendSSHPublicKeyToInstance,
 } from "./provisioner";
 import { Ec2InstanceSecurity } from "./security";
-import { Instance } from "aws-sdk/clients/ec2";
 
 export interface LambdaProvisionerArgs {
     ec2Security: Ec2InstanceSecurity;
@@ -52,21 +52,27 @@ export class EventsHandler extends pulumi.ComponentResource {
         });
     }
 
-    createIAM() {
+    createIAM(): void {
         // Configure IAM so that the AWS Lambda can be run.
-        this.role = new aws.iam.Role(`${this.name}-lambda-role`, {
-            assumeRolePolicy: {
-                Version: "2012-10-17",
-                Statement: [{
-                    Action: "sts:AssumeRole",
-                    Principal: {
-                        Service: "lambda.amazonaws.com",
-                    },
-                    Effect: "Allow",
-                    Sid: "",
-                }],
+        this.role = new aws.iam.Role(
+            `${this.name}-lambda-role`,
+            {
+                assumeRolePolicy: {
+                    Version: "2012-10-17",
+                    Statement: [
+                        {
+                            Action: "sts:AssumeRole",
+                            Principal: {
+                                Service: "lambda.amazonaws.com",
+                            },
+                            Effect: "Allow",
+                            Sid: "",
+                        },
+                    ],
+                },
             },
-        }, { parent: this });
+            { parent: this }
+        );
 
         const rolePolicyDoc: aws.iam.PolicyDocument = {
             Version: "2012-10-17",
@@ -96,48 +102,76 @@ export class EventsHandler extends pulumi.ComponentResource {
                 },
             ],
         };
-        const iamPolicy = new aws.iam.Policy(`${this.name}-lambda-pol`, {
-            description: "Custom IAM policy for Lambda execution.",
-            policy: JSON.stringify(rolePolicyDoc),
-        }, { parent: this });
+        const iamPolicy = new aws.iam.Policy(
+            `${this.name}-lambda-pol`,
+            {
+                description: "Custom IAM policy for Lambda execution.",
+                policy: JSON.stringify(rolePolicyDoc),
+            },
+            { parent: this }
+        );
 
-        new aws.iam.RolePolicyAttachment(`${this.name}-lambda-attach-pol1`, {
-            role: this.role,
-            policyArn: iamPolicy.arn,
-        }, { parent: this });
+        new aws.iam.RolePolicyAttachment(
+            `${this.name}-lambda-attach-pol1`,
+            {
+                role: this.role,
+                policyArn: iamPolicy.arn,
+            },
+            { parent: this }
+        );
 
         // Network interface actions to allow Lambda to bind to an available
         // interface within the VPC.
-        new aws.iam.RolePolicyAttachment(`${this.name}-lambda-attach-pol2`, {
-            role: this.role,
-            policyArn: aws.iam.ManagedPolicies.AWSLambdaVPCAccessExecutionRole,
-        }, { parent: this });
+        new aws.iam.RolePolicyAttachment(
+            `${this.name}-lambda-attach-pol2`,
+            {
+                role: this.role,
+                policyArn: aws.iam.ManagedPolicies.AWSLambdaVPCAccessExecutionRole,
+            },
+            { parent: this }
+        );
     }
 
-    createLambda() {
+    createLambda(): void {
+        if (!this.args.ec2Security.privateSubnet || !this.args.ec2Security.securityGroup) {
+            throw new Error("Network security is not configured properly. Cannot create a Lambda.");
+        }
+
         const zipFileName = this.args.zipFilename;
         const bucketName = this.args.bucketName;
         const spotInstanceRequestId = this.args.spotInstanceRequestId;
-        this.callbackFunction = new aws.lambda.CallbackFunction(`${this.name}-provisioner`, {
-            callback: this.getCallbackFunction(bucketName, spotInstanceRequestId, zipFileName),
-            role: this.role,
-            memorySize: 128, // MB
-            timeout: 800, // Seconds
-            runtime: aws.lambda.NodeJS12dXRuntime,
-            vpcConfig: {
-                subnetIds: [this.args.ec2Security.privateSubnet?.id!],
-                securityGroupIds: [this.args.ec2Security.securityGroup?.id!],
+        this.callbackFunction = new aws.lambda.CallbackFunction(
+            `${this.name}-provisioner`,
+            {
+                callback: this.getCallbackFunction(bucketName, spotInstanceRequestId, zipFileName),
+                role: this.role,
+                memorySize: 128, // MB
+                timeout: 800, // Seconds
+                runtime: aws.lambda.NodeJS12dXRuntime,
+                vpcConfig: {
+                    // If the private subnet and the security group are defined, then they will
+                    // definitely have an id.
+                    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                    subnetIds: [this.args.ec2Security.privateSubnet.id!],
+                    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                    securityGroupIds: [this.args.ec2Security.securityGroup.id!],
+                },
             },
-        }, { parent: this });
+            { parent: this }
+        );
     }
 
-    private getCallbackFunction(bucketName: pulumi.Output<string>, spotInstanceRequestId: pulumi.Output<string>, zipFilename: string) {
+    private getCallbackFunction(
+        bucketName: pulumi.Output<string>,
+        spotInstanceRequestId: pulumi.Output<string>,
+        zipFilename: string
+    ) {
         return async (e: any, ctx: Context) => {
             console.log("lambda event", e);
             console.log("Spot Instance request id", spotInstanceRequestId);
             let instance: Instance;
             // For aws.ec2 events, the instance ID is in the event.
-            if (e.hasOwnProperty("source") && e.source === "aws.ec2") {
+            if (e["source"] && e.source === "aws.ec2") {
                 const instanceId = e.detail["instance-id"];
                 instance = await getInstanceInfo(instanceId);
             } else {
@@ -153,20 +187,21 @@ export class EventsHandler extends pulumi.ComponentResource {
                 modulusLength: 4096,
                 publicKeyEncoding: {
                     type: "spki",
-                    format: "pem"
+                    format: "pem",
                 },
                 privateKeyEncoding: {
                     type: "pkcs1",
                     format: "pem",
-                }
+                },
             };
             // If the instance is either interrupted due to a price change or terminated due to a scheduled termination,
             // we should give the chance to "deprovision" the instance, so run the selected deprovision script in the
             // instance.
-            if (e.hasOwnProperty("source") &&
+            if (
+                e["source"] &&
                 e.source === "aws.ec2" &&
-                (e.detail["instance-action"] === "terminate" ||
-                    e.detail["state"] === "shutting-down")) {
+                (e.detail["instance-action"] === "terminate" || e.detail["state"] === "shutting-down")
+            ) {
                 const p = new Promise<void>((resolve, reject) => {
                     generateKeyPair("rsa", keypairSettings, async (err: any, publicKey: string, privateKey: string) => {
                         if (err) {
@@ -177,7 +212,14 @@ export class EventsHandler extends pulumi.ComponentResource {
                         // Convert the public to an OpenSSH public key format.
                         const sshPublicKey = sshpk.parseKey(publicKey, "pem").toString("ssh");
                         await sendSSHPublicKeyToInstance(instance, sshPublicKey);
-                        await runShutdownScript(ctx, spotInstanceRequestId.get(), instance.PrivateIpAddress!, privateKey);
+                        await runShutdownScript(
+                            ctx,
+                            spotInstanceRequestId.get(),
+                            // The instance will have a private IP address.
+                            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                            instance.PrivateIpAddress!,
+                            privateKey
+                        );
                         console.log("All done!");
                         resolve();
                     });
@@ -196,12 +238,14 @@ export class EventsHandler extends pulumi.ComponentResource {
                     // Convert the public key to an OpenSSH public key format.
                     const sshPublicKey = sshpk.parseKey(publicKey, "pem").toString("ssh");
                     await sendSSHPublicKeyToInstance(instance, sshPublicKey);
+                    // An instance will always have a private IP address.
+                    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
                     await provisionInstance(ctx, spotInstanceRequestId.get(), instance.PrivateIpAddress!, privateKey);
                     console.log("All done!");
                     resolve();
                 });
             });
             return p;
-        }
+        };
     }
 }

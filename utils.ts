@@ -1,8 +1,9 @@
-import * as aws from "@pulumi/aws";
 
 import * as crypto from "crypto";
 import * as fs from "fs";
 import * as path from "path";
+
+import * as aws from "@pulumi/aws";
 
 export async function getAwsAz(index: number): Promise<string> {
     const azs = await aws.getAvailabilityZones({
@@ -29,7 +30,7 @@ export async function getAmi(): Promise<aws.GetAmiResult> {
 /**
  * Calculates a hash for all of the files under the scripts directory.
  */
-async function getScriptsHash(): Promise<string> {
+async function _getScriptsHash(): Promise<string> {
     const p = new Promise<string>((resolve, reject) => {
         const hash = crypto.createHash("md5");
         fs.readdir(path.join(__dirname, "scripts"), { encoding: "utf8" }, (err, files) => {

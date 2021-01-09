@@ -1,10 +1,11 @@
+import { execSync } from "child_process";
+
 import * as pulumi from "@pulumi/pulumi";
 import * as random from "@pulumi/random";
 
 import * as ssh2 from "ssh2";
 import { ParsedKey } from "ssh2-streams";
 
-import { execSync } from "child_process";
 import { registerDefaultTags } from "./tags";
 import { SpotInstance } from "./spotInstance";
 
@@ -55,7 +56,7 @@ pulumi.all([fahUsername, fahPassKey, fahRemoteControlPass, fahAllowedIP]).apply(
     pulumi.log.info("Updated config.xml");
 });
 
-const spotInstance = new SpotInstance("fah", {});
+const spotInstance = new SpotInstance("fah");
 export const spotRequestId = spotInstance.spotRequestId;
 export const instanceId = spotInstance.instanceId;
 export const objectStorage = spotInstance.objectStorage;
