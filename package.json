@@ -9,7 +9,7 @@
     },
     "devDependencies": {
         "@types/node": "^13.13.12",
-        "@types/ssh2": "^0.5.44",
+        "@types/ssh2": "^0.5.46",
         "@types/sshpk": "^1.10.4",
         "@types/unzipper": "^0.10.3",
         "@types/uuid": "^8.0.0",
