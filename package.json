@@ -6,7 +6,7 @@
         "buildAzFuncApp": "cd ./azure/functionapp && npm run build:production",
         "destroy": "pulumi destroy",
         "preview": "pulumi preview",
-        "lint": "eslint"
+        "lint": "eslint ."
     },
     "devDependencies": {
         "@types/node": "^13.13.12",
