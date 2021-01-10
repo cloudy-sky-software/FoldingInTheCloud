@@ -97,7 +97,7 @@ export class AzureEvents extends pulumi.ComponentResource {
             .apply((keys) => keys.systemKeys["eventgrid_extension"]);
         const url = pulumi.interpolate `https://${functionAppName}.azurewebsites.net/runtime/webhooks/eventgrid?functionName=${functionName}&code=${systemKey}`;
         const _evSub = new azure.eventgrid.EventSubscription(
-            `${this.name}-blob-sub`,
+            `${this.name}-blob`,
             {
                 scope: this.args.storageAccount.id,
                 retryPolicy: {
