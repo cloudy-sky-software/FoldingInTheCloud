@@ -30,14 +30,16 @@ export class AwsEvents extends pulumi.ComponentResource {
                 spotInstanceRequestId: args.spotInstanceRequest.id,
                 zipFilename: args.zipFileName,
             },
-            { parent: this }
+            { parent: this },
         );
 
         if (!handler.callbackFunction) {
-            throw new Error("Handler has an undefined callback function property. Cannot subscribe to events.");
+            throw new Error(
+                "Handler has an undefined callback function property. Cannot subscribe to events.");
         }
 
-        args.bucket.onObjectCreated("fah-object-created", handler.callbackFunction, undefined, { parent: this });
+        args.bucket.onObjectCreated(
+            "fah-object-created", handler.callbackFunction, undefined, { parent: this });
 
         const instanceRunningEvent = new aws.cloudwatch.EventRule(
             `${name}-inst-running`,
@@ -51,10 +53,11 @@ export class AwsEvents extends pulumi.ComponentResource {
                     },
                 }),
             },
-            { parent: this }
+            { parent: this },
         );
 
-        instanceRunningEvent.onEvent(`${name}-inst-running-sub`, handler.callbackFunction, undefined, { parent: this });
+        instanceRunningEvent.onEvent(
+            `${name}-inst-running-sub`, handler.callbackFunction, undefined, { parent: this });
 
         const eventRule = new aws.cloudwatch.EventRule(
             `${name}-interruption`,
@@ -65,10 +68,11 @@ export class AwsEvents extends pulumi.ComponentResource {
                     "detail-type": ["EC2 Spot Instance Interruption Warning"],
                 }),
             },
-            { parent: this }
+            { parent: this },
         );
 
-        eventRule.onEvent(`${name}-interruption-sub`, handler.callbackFunction, undefined, { parent: this });
+        eventRule.onEvent(
+            `${name}-interruption-sub`, handler.callbackFunction, undefined, { parent: this });
 
         this.registerOutputs({});
     }

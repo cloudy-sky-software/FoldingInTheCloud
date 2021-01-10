@@ -7,7 +7,13 @@ import * as pulumi from "@pulumi/pulumi";
 
 export interface EventsHandlerArgs {
     resourceGroup: ResourceGroup;
+
+    /**
+     * The VM that is the target will be the target of the provisioning actions.
+     * Read more about why this is needed in the `AzureEvents` component resource.
+     */
     vm: LinuxVirtualMachine;
+
     storageAccount: Account;
     scriptsContainer: Container;
 
@@ -32,7 +38,7 @@ export class EventsHandler extends pulumi.ComponentResource {
                 containerAccessType: "private",
                 name: "function-app-storage",
             },
-            { parent: this }
+            { parent: this },
         );
 
         const ai = new Insights(
@@ -42,7 +48,7 @@ export class EventsHandler extends pulumi.ComponentResource {
                 retentionInDays: 30,
                 applicationType: "Node.JS",
             },
-            { parent: this }
+            { parent: this },
         );
         this.functionApp = new ArchiveFunctionApp(
             `${this.name}-func`,
@@ -68,7 +74,7 @@ export class EventsHandler extends pulumi.ComponentResource {
                     APPINSIGHTS_INSTRUMENTATIONKEY: ai.instrumentationKey,
                 },
             },
-            { parent: this }
+            { parent: this },
         );
 
         this.registerOutputs({

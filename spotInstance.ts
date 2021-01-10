@@ -9,24 +9,40 @@ import { AzureEvents } from "./azure/events";
 import { Ec2SpotInstance } from "./aws/ec2";
 import { AwsEvents } from "./aws/events";
 
-// Get the config ready to go.
-const config = new pulumi.Config();
-const publicKey = config.require("publicKey");
-const privateKey = config.requireSecret("privateKey");
-const privateKeyPassphrase = config.get("privateKeyPassphrase") || "";
-const fahAllowedIP = config.requireSecret("fahAllowedIP");
-const cloudProvider = config.get("cloudProvider") || "aws";
+import {
+    allowedIP,
+    cloudProvider,
+    instanceType,
+    maxBidPrice,
+    privateKey,
+    publicKey,
+    privateKeyPassphrase,
+} from "./config";
+import { getAwsSecurityGroupIngressRules } from "./awsUtils";
+import { getAzureVmIngressRules } from "./azureUtils";
+
+export interface SpotInstanceArgs {
+    /**
+     * By default, the SSH port (22) is open and allowed access from the
+     * `allowedIP` IP address. Specify additional ports that you
+     * want to expose on the VM. These additional ports will also only be
+     * accessible from the `allowedIP` IP address.
+     */
+    exposedPorts: number[];
+}
 
 export class SpotInstance extends pulumi.ComponentResource {
     private name: string;
+    private args: SpotInstanceArgs;
 
     public spotRequestId?: pulumi.Output<string>;
     public instanceId?: pulumi.Output<string>;
     public objectStorage?: pulumi.Output<string>;
 
-    constructor(name: string, opts?: pulumi.ComponentResourceOptions) {
+    constructor(name: string, args: SpotInstanceArgs, opts?: pulumi.ComponentResourceOptions) {
         super("spotInstance", name, undefined, opts);
         this.name = name;
+        this.args = args;
 
         if (cloudProvider === "aws") {
             this.createAwsInfra();
@@ -38,9 +54,8 @@ export class SpotInstance extends pulumi.ComponentResource {
     }
 
     private createAzureInfra() {
-        const resourceGroupName = "fah-linux";
-        const resourceGroup = new ResourceGroup(resourceGroupName, {
-            name: resourceGroupName,
+        const resourceGroup = new ResourceGroup(this.name, {
+            name: this.name,
         }, { parent: this });
 
         // The storage to use for storing the workload scripts, as well as
@@ -51,7 +66,7 @@ export class SpotInstance extends pulumi.ComponentResource {
             accountTier: "Standard",
         }, { parent: resourceGroup });
 
-        const blobContainer = new Container(`${this.name}-cntnr`, {
+        const blobContainer = new Container(`${this.name}Container`, {
             containerAccessType: "private",
             storageAccountName: storageAccount.name,
             name: "scripts",
@@ -63,7 +78,8 @@ export class SpotInstance extends pulumi.ComponentResource {
 
             // Use Azure VM the price configurator to find the best price.
             // https://azure.microsoft.com/en-us/pricing/details/virtual-machines/linux/
-            maxSpotPrice: 0.2,
+            maxSpotPrice: maxBidPrice,
+            instanceType: instanceType,
             securityGroupRules: [
                 {
                     name: "AllowSSH",
@@ -73,25 +89,13 @@ export class SpotInstance extends pulumi.ComponentResource {
                     protocol: "TCP",
 
                     sourcePortRange: "*",
-                    sourceAddressPrefix: pulumi.interpolate`${fahAllowedIP}/32`,
+                    sourceAddressPrefix: pulumi.interpolate`${allowedIP}/32`,
 
                     destinationAddressPrefix: "VirtualNetwork",
                     destinationPortRange: "22",
                 },
-                {
-                    name: "AllowFAHRemoteControl",
-                    access: "Allow",
-                    direction: "Inbound",
-                    priority: 400,
-                    protocol: "TCP",
-
-                    sourcePortRange: "*",
-                    sourceAddressPrefix: pulumi.interpolate`${fahAllowedIP}/32`,
-
-                    destinationAddressPrefix: "VirtualNetwork",
-                    destinationPortRange: "36330",
-                }
-            ]
+                ...getAzureVmIngressRules(allowedIP, this.args.exposedPorts, 400),
+            ],
         }, { parent: resourceGroup, dependsOn: storageAccount });
 
         if (!azureSpotVm.spotInstance || !azureSpotVm.vmSecurity.securityGroup) {
@@ -113,7 +117,7 @@ export class SpotInstance extends pulumi.ComponentResource {
             type: "Block",
             name: "scripts",
             contentType: "application/zip",
-            source: new pulumi.asset.FileArchive("./scripts")
+            source: new pulumi.asset.FileArchive("./scripts"),
         }, { parent: resourceGroup, dependsOn: events });
 
         this.objectStorage = storageAccount.name;
@@ -130,12 +134,12 @@ export class SpotInstance extends pulumi.ComponentResource {
             serverSideEncryptionConfiguration: {
                 rule: {
                     applyServerSideEncryptionByDefault: {
-                        sseAlgorithm: "AES256"
-                    }
-                }
+                        sseAlgorithm: "AES256",
+                    },
+                },
             },
             versioning: {
-                enabled: true
+                enabled: true,
             },
         }, { parent: this });
 
@@ -147,18 +151,12 @@ export class SpotInstance extends pulumi.ComponentResource {
              * Use the Spot Instance Advisor to find a region for the instance type.
              * https://aws.amazon.com/ec2/spot/instance-advisor/
              */
-            instanceType: "g4dn.xlarge",
+            instanceType,
             /**
              * Max per-hour spot price is based on the price history for the instance
              * per https://aws.amazon.com/ec2/spot/pricing/.
              */
-            maxSpotPrice: "0.2",
-            /**
-             * Defined duration spot instances are less likely to be interrupted.
-             * And if they are interrupted, we won't incur charges for the hour
-             * in which it is interrupted. That sounds like a good deal.
-             */
-            // blockDurationMinutes: 180,
+            maxSpotPrice: `${maxBidPrice}`,
 
             privateKey,
             publicKey,
@@ -166,20 +164,29 @@ export class SpotInstance extends pulumi.ComponentResource {
 
             ingressRules: [
                 // For SSH access to the instance from the remote IP.
-                { protocol: "tcp", fromPort: 22, toPort: 22, cidrBlocks: [pulumi.interpolate`${fahAllowedIP}/32`] },
+                {
+                    protocol: "tcp",
+                    fromPort: 22,
+                    toPort: 22,
+                    cidrBlocks: [pulumi.interpolate`${allowedIP}/32`],
+                },
                 // For SSH access to the instance from resources within the security group.
-                { protocol: "tcp", fromPort: 22, toPort: 22, self: true },
-                // To allow FAHControl on a remote IP to be able to connect to/control the FAHClient on the EC2 instance.
-                { protocol: "tcp", fromPort: 36330, toPort: 36330, cidrBlocks: [pulumi.interpolate`${fahAllowedIP}/32`] }
+                {
+                    protocol: "tcp",
+                    fromPort: 22,
+                    toPort: 22,
+                    self: true,
+                },
+                ...getAwsSecurityGroupIngressRules(allowedIP, this.args.exposedPorts),
             ],
         }, { dependsOn: bucket, parent: this });
 
         if (!ec2SpotInstance || !ec2SpotInstance.spotRequest) {
-            return;
+            throw new Error("Cannot proceed since the instance request is undefined.");
         }
 
-        const zipFileName = "fah-scripts";
-        const events = new AwsEvents("fah-events", {
+        const zipFileName = "workload-scripts";
+        const events = new AwsEvents("events", {
             ec2Security: ec2SpotInstance.ec2Security,
             spotInstanceRequest: ec2SpotInstance.spotRequest,
             bucket,
@@ -187,11 +194,11 @@ export class SpotInstance extends pulumi.ComponentResource {
         }, { dependsOn: ec2SpotInstance, parent: this });
 
         // Create the BucketObject just before we exit the process, because the BucketNotification
-        // resource itself is created on process exit. If we didn't do this, the BucketObject
-        // will always be created _before_ the BucketNotification exists and therefore, there wouldn't
-        // be anything to handle the notification. With this trick, we are delaying the creation of the
-        // BucketObject to after the BucketNotification is created, which itself is created via a process
-        // `beforeExit` handler.
+        // resource itself is created on process exit. If we don't do this, the BucketObject
+        // will always be created _before_ the BucketNotification exists and therefore,
+        // there wouldn't be anything to handle the notification. With this trick,
+        // we are delaying the creation of the BucketObject to after the BucketNotification
+        // is created, which itself is created via a process `beforeExit` handler.
         // See https://github.com/pulumi/pulumi-aws/blob/master/sdk/nodejs/s3/s3Mixins.ts#L187.
         const bucketObjectOpts: pulumi.CustomResourceOptions = {
             parent: this,
@@ -206,11 +213,12 @@ export class SpotInstance extends pulumi.ComponentResource {
             if (bucketObjectCreated) {
                 return;
             }
-            const _bucketObject = new aws.s3.BucketObject("fah-scripts", {
+
+            const _bucketObject = new aws.s3.BucketObject(zipFileName, {
                 bucket: bucket,
                 key: zipFileName,
                 serverSideEncryption: "AES256",
-                source: new pulumi.asset.FileArchive("./scripts")
+                source: new pulumi.asset.FileArchive("./scripts"),
             }, bucketObjectOpts);
             bucketObjectCreated = true;
         });

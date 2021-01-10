@@ -1,7 +1,7 @@
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
 
-import { getAwsAz } from "../utils";
+import { getAwsAz } from "../awsUtils";
 
 export interface Ec2InstanceSecurityArgs {
     securityGroupIngressRules: aws.types.input.ec2.SecurityGroupIngress[];
@@ -16,7 +16,8 @@ export class Ec2InstanceSecurity extends pulumi.ComponentResource {
     public privateSubnet: aws.ec2.Subnet | undefined;
     public securityGroup: aws.ec2.SecurityGroup | undefined;
 
-    constructor(name: string, args: Ec2InstanceSecurityArgs, opts?: pulumi.ComponentResourceOptions) {
+    constructor(
+        name: string, args: Ec2InstanceSecurityArgs, opts?: pulumi.ComponentResourceOptions) {
         super("aws:security", name, undefined, opts);
         this.name = name;
         this.args = args;
@@ -60,7 +61,7 @@ export class Ec2InstanceSecurity extends pulumi.ComponentResource {
             {
                 assumeRolePolicy: JSON.stringify(assumeInstanceRolePolicyDoc),
             },
-            { parent: this }
+            { parent: this },
         );
 
         const _instanceRolePolicy = new aws.iam.RolePolicy(
@@ -69,7 +70,7 @@ export class Ec2InstanceSecurity extends pulumi.ComponentResource {
                 role: instanceRole.id,
                 policy: instanceRolePolicyDoc,
             },
-            { parent: this }
+            { parent: this },
         );
 
         this.instanceProfile = new aws.iam.InstanceProfile(
@@ -77,7 +78,7 @@ export class Ec2InstanceSecurity extends pulumi.ComponentResource {
             {
                 role: instanceRole,
             },
-            { parent: this }
+            { parent: this },
         );
     }
 
@@ -91,7 +92,7 @@ export class Ec2InstanceSecurity extends pulumi.ComponentResource {
             {
                 vpc: true,
             },
-            { parent: this }
+            { parent: this },
         );
 
         const natGw = new aws.ec2.NatGateway(
@@ -100,7 +101,7 @@ export class Ec2InstanceSecurity extends pulumi.ComponentResource {
                 allocationId: eip.id,
                 subnetId: this.publicSubnet.id,
             },
-            { parent: this }
+            { parent: this },
         );
 
         const privateRouteTable = new aws.ec2.RouteTable(
@@ -114,7 +115,7 @@ export class Ec2InstanceSecurity extends pulumi.ComponentResource {
                     },
                 ],
             },
-            { parent: this }
+            { parent: this },
         );
 
         /**
@@ -129,7 +130,7 @@ export class Ec2InstanceSecurity extends pulumi.ComponentResource {
                 routeTableId: privateRouteTable.id,
                 subnetId: this.privateSubnet.id,
             },
-            { parent: this }
+            { parent: this },
         );
     }
 
@@ -143,7 +144,7 @@ export class Ec2InstanceSecurity extends pulumi.ComponentResource {
             {
                 vpcId: vpc.id,
             },
-            { parent: this, customTimeouts: { delete: "1h" } }
+            { parent: this, customTimeouts: { delete: "1h" } },
         );
 
         const routeTable = new aws.ec2.RouteTable(
@@ -157,7 +158,7 @@ export class Ec2InstanceSecurity extends pulumi.ComponentResource {
                     },
                 ],
             },
-            { parent: this }
+            { parent: this },
         );
 
         /**
@@ -171,7 +172,7 @@ export class Ec2InstanceSecurity extends pulumi.ComponentResource {
                 routeTableId: routeTable.id,
                 subnetId: this.publicSubnet.id,
             },
-            { parent: this }
+            { parent: this },
         );
     }
 
@@ -182,7 +183,7 @@ export class Ec2InstanceSecurity extends pulumi.ComponentResource {
                 cidrBlock: "10.10.0.0/16",
                 enableDnsHostnames: true,
             },
-            { parent: this, customTimeouts: { delete: "1h" } }
+            { parent: this, customTimeouts: { delete: "1h" } },
         );
 
         this.publicSubnet = new aws.ec2.Subnet(
@@ -193,7 +194,7 @@ export class Ec2InstanceSecurity extends pulumi.ComponentResource {
                 availabilityZone: pulumi.output(getAwsAz(0)),
                 mapPublicIpOnLaunch: true,
             },
-            { parent: this, customTimeouts: { delete: "1h" } }
+            { parent: this, customTimeouts: { delete: "1h" } },
         );
 
         this.privateSubnet = new aws.ec2.Subnet(
@@ -205,7 +206,7 @@ export class Ec2InstanceSecurity extends pulumi.ComponentResource {
                 availabilityZone: pulumi.output(getAwsAz(0)),
                 mapPublicIpOnLaunch: false,
             },
-            { parent: this, customTimeouts: { delete: "1h" } }
+            { parent: this, customTimeouts: { delete: "1h" } },
         );
 
         this.securityGroup = new aws.ec2.SecurityGroup(
@@ -216,7 +217,7 @@ export class Ec2InstanceSecurity extends pulumi.ComponentResource {
                 egress: [{ protocol: "-1", fromPort: 0, toPort: 0, cidrBlocks: ["0.0.0.0/0"] }],
                 vpcId: vpc.id,
             },
-            { parent: this, customTimeouts: { delete: "1h" } }
+            { parent: this, customTimeouts: { delete: "1h" } },
         );
 
         this.setupInternetGateway(vpc);

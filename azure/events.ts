@@ -12,6 +12,27 @@ export interface EventsArgs {
     scriptsContainer: Container;
     securityGroup: NetworkSecurityGroup;
     storageAccount: Account;
+
+    /**
+     * The VM that is the target will be the target of the provisioning actions.
+     *
+     * Unfortunately, we can't do without this information because we are unable
+     * to listen to VM events from a Function App. VM events are delivered through
+     * [Scheduled Events](https://docs.microsoft.com/en-us/azure/virtual-machines/windows/scheduled-events#scope)
+     * which is accessible only through a metadata endpoint internal to the VM's VNET.
+     * Since our Function App is not in the same VNET (or in any for that matter!) due
+     * to limitations in Azure's Function App Consumption Plan, we don't have a better
+     * choice here.
+     * 
+     * This also means a VM MUST be available to be fulfilled at the requested price at
+     * the time of creation. Otherwise, the whole infrastructure fails to be created due
+     * to this requirement.
+     *
+     * Alternatively, this requirement could be removed by listening to resource actions
+     * at a resource group level, but the VM should be the only resource in that resource
+     * group.
+     * See https://docs.microsoft.com/en-us/azure/event-grid/monitor-virtual-machine-changes-event-grid-logic-app.
+     */
     vm: LinuxVirtualMachine;
 
     privateKey: pulumi.Input<string>;
@@ -35,7 +56,7 @@ export class AzureEvents extends pulumi.ComponentResource {
                 scriptsContainer: this.args.scriptsContainer,
                 storageAccount: this.args.storageAccount,
             },
-            { parent: this }
+            { parent: this },
         );
 
         const sourceIpAddresses = pulumi
@@ -44,7 +65,10 @@ export class AzureEvents extends pulumi.ComponentResource {
                 handler.functionApp.functionApp.possibleOutboundIpAddresses,
             ])
             .apply(([outboundIpAddresses, possibleOutboundIpAddresses]) => {
-                return [...outboundIpAddresses.split(","), ...possibleOutboundIpAddresses.split(",")];
+                return [
+                    ...outboundIpAddresses.split(","),
+                    ...possibleOutboundIpAddresses.split(","),
+                ];
             });
         const _networkSg = new NetworkSecurityRule(
             `${this.name}`,
@@ -64,7 +88,7 @@ export class AzureEvents extends pulumi.ComponentResource {
                 destinationAddressPrefix: "VirtualNetwork",
                 destinationPortRange: "22",
             },
-            { parent: this }
+            { parent: this },
         );
         const functionAppName = handler.functionApp.functionApp.name;
         const functionName = "EventGridTrigger1";
@@ -73,7 +97,7 @@ export class AzureEvents extends pulumi.ComponentResource {
             .apply((keys) => keys.systemKeys["eventgrid_extension"]);
         const url = pulumi.interpolate `https://${functionAppName}.azurewebsites.net/runtime/webhooks/eventgrid?functionName=${functionName}&code=${systemKey}`;
         const _evSub = new azure.eventgrid.EventSubscription(
-            `${this.name}-sub`,
+            `${this.name}-blob`,
             {
                 scope: this.args.storageAccount.id,
                 retryPolicy: {
@@ -89,7 +113,7 @@ export class AzureEvents extends pulumi.ComponentResource {
                     url,
                 },
             },
-            { parent: this }
+            { parent: this },
         );
 
         this.registerOutputs({});
