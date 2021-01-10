@@ -1,15 +1,16 @@
-import * as pulumi from "@pulumi/pulumi";
 import * as aws from "@pulumi/aws";
+import * as pulumi from "@pulumi/pulumi";
+
+import { getAmi, getAwsUserData } from "../utils";
 
 import { Ec2InstanceSecurity } from "./security";
-import { getAmi, getAwsUserData } from "../utils";
 
 export interface Ec2SpotInstanceArgs {
     privateKey: pulumi.Input<string>;
     privateKeyPassphrase?: pulumi.Input<string>;
     publicKey: pulumi.Input<string>;
 
-    instanceType: aws.ec2.InstanceType | string,
+    instanceType: aws.ec2.InstanceType | string;
     /**
      * The max price per hour that you are willing to pay for the instance.
      */
@@ -32,11 +33,13 @@ export class Ec2SpotInstance extends pulumi.ComponentResource {
         this.args = args;
         this.name = name;
 
-        this.ec2Security = new Ec2InstanceSecurity(`${name}-sec`,
+        this.ec2Security = new Ec2InstanceSecurity(
+            `${name}-sec`,
             {
                 securityGroupIngressRules: args.ingressRules,
             },
-            { ...opts, parent: this });
+            { ...opts, parent: this }
+        );
         this.createInstance();
         this.registerOutputs({
             instance: this.spotRequest,
@@ -52,31 +55,39 @@ export class Ec2SpotInstance extends pulumi.ComponentResource {
         }
 
         // Create an EC2 server that we'll then provision stuff onto.
-        const key = new aws.ec2.KeyPair(`${this.name}-InstanceKey`, {
-            publicKey: this.args.publicKey,
-        }, { parent: this });
-        this.spotRequest = new aws.ec2.SpotInstanceRequest(`${this.name}-spotreq`, {
-            instanceType: this.args.instanceType,
-            ami: pulumi.output(getAmi()).apply(ami => ami.id),
-            keyName: key.keyName,
-            rootBlockDevice: {
-                volumeSize: 50,
+        const key = new aws.ec2.KeyPair(
+            `${this.name}-InstanceKey`,
+            {
+                publicKey: this.args.publicKey,
             },
-            availabilityZone: this.ec2Security.publicSubnet.availabilityZone,
-            vpcSecurityGroupIds: [this.ec2Security.securityGroup.id],
-            subnetId: this.ec2Security.publicSubnet.id,
-            spotPrice: this.args.maxSpotPrice,
-            blockDurationMinutes: this.args.blockDurationMinutes,
-            monitoring: true,
-            associatePublicIpAddress: true,
-            iamInstanceProfile: this.ec2Security.instanceProfile.name,
-            waitForFulfillment: false,
-            metadataOptions: {
-                // The default is `enabled`, but being explicit that the IMDS is enabled.
-                httpEndpoint: "enabled",
+            { parent: this }
+        );
+        this.spotRequest = new aws.ec2.SpotInstanceRequest(
+            `${this.name}-spotreq`,
+            {
+                instanceType: this.args.instanceType,
+                ami: pulumi.output(getAmi()).apply((ami) => ami.id),
+                keyName: key.keyName,
+                rootBlockDevice: {
+                    volumeSize: 50,
+                },
+                availabilityZone: this.ec2Security.publicSubnet.availabilityZone,
+                vpcSecurityGroupIds: [this.ec2Security.securityGroup.id],
+                subnetId: this.ec2Security.publicSubnet.id,
+                spotPrice: this.args.maxSpotPrice,
+                blockDurationMinutes: this.args.blockDurationMinutes,
+                monitoring: true,
+                associatePublicIpAddress: true,
+                iamInstanceProfile: this.ec2Security.instanceProfile.name,
+                waitForFulfillment: false,
+                metadataOptions: {
+                    // The default is `enabled`, but being explicit that the IMDS is enabled.
+                    httpEndpoint: "enabled",
+                },
+                userData: getAwsUserData(),
             },
-            userData: getAwsUserData(),
-        }, { parent: this });
+            { parent: this }
+        );
 
         return true;
     }

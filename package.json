@@ -5,27 +5,32 @@
         "aws": "pulumi up -s aws",
         "buildAzFuncApp": "cd ./azure/functionapp && npm run build:production",
         "destroy": "pulumi destroy",
-        "preview": "pulumi preview"
+        "preview": "pulumi preview",
+        "lint": "eslint ."
     },
     "devDependencies": {
         "@types/node": "^13.13.12",
-        "@types/ssh2": "^0.5.44",
+        "@types/ssh2": "^0.5.46",
         "@types/sshpk": "^1.10.4",
         "@types/unzipper": "^0.10.3",
         "@types/uuid": "^8.0.0",
+        "@typescript-eslint/eslint-plugin": "^4.12.0",
+        "@typescript-eslint/parser": "^4.12.0",
+        "eslint": "^7.17.0",
+        "eslint-plugin-import": "^2.22.1",
         "typescript": "^3.9.5"
     },
     "dependencies": {
-        "@pulumi/aws": "^3.5.0",
+        "@pulumi/aws": "^3.23.0",
         "@pulumi/awsx": "^0.20.0",
-        "@pulumi/azure": "^3.30.0",
-        "@pulumi/pulumi": "^2.13.2",
-        "@pulumi/random": "^2.4.1",
+        "@pulumi/azure": "^3.41.1",
+        "@pulumi/pulumi": "^2.17.0",
+        "@pulumi/random": "^2.5.0",
         "axios": "^0.21.1",
         "scp2": "github:spmjs/node-scp2#master",
         "ssh2": "^0.8.9",
         "sshpk": "^1.16.1",
         "unzipper": "^0.10.11",
-        "uuid": "^8.3.0"
+        "uuid": "^8.3.2"
     }
 }

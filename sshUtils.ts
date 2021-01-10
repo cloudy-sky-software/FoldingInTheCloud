@@ -1,5 +1,6 @@
-import * as ssh2 from "ssh2";
 import * as path from "path";
+
+import * as ssh2 from "ssh2";
 
 /**
  * The user name to use when connecting to the instance.
@@ -35,19 +36,19 @@ function connTypeOrDefault(conn: ConnectionArgs): ConnectionType {
     return conn.type || "ssh";
 }
 
-function connPortOrDefault(conn: ConnectionArgs): number {
+function _connPortOrDefault(conn: ConnectionArgs): number {
     if (conn.port !== undefined) {
         return conn.port;
     }
 
     const connType = connTypeOrDefault(conn);
     switch (connType) {
-        case "ssh":
-            return 22;
-        case "winrm":
-            return 5985;
-        default:
-            throw new Error(`unrecognized connectiont ype ${connType}`);
+    case "ssh":
+        return 22;
+    case "winrm":
+        return 5985;
+    default:
+        throw new Error(`unrecognized connectiont ype ${connType}`);
     }
 }
 
@@ -58,12 +59,12 @@ function connUsernameOrDefault(conn: ConnectionArgs): string {
 
     const connType = connTypeOrDefault(conn);
     switch (connType) {
-        case "ssh":
-            return "root";
-        case "winrm":
-            return "Administrator";
-        default:
-            throw new Error(`unrecognized connectiont ype ${connType}`);
+    case "ssh":
+        return "root";
+    case "winrm":
+        return "Administrator";
+    default:
+        throw new Error(`unrecognized connectiont ype ${connType}`);
     }
 }
 
@@ -84,8 +85,9 @@ export async function copyFile(conn: ConnectionArgs, src: string, dest: string):
         throw new Error("only SSH connection types currently supported");
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const scp2 = require("scp2");
-    const mkdirPromise = new Promise((resolve, reject) => {
+    const mkdirPromise = new Promise<void>((resolve, reject) => {
         scp2.defaults({ ...connToSsh2(conn) });
         scp2.mkdir(path.dirname(dest), (err: any) => {
             if (!err) {
@@ -98,7 +100,7 @@ export async function copyFile(conn: ConnectionArgs, src: string, dest: string):
     });
     let connectionFailCount = 0;
     return mkdirPromise.then(() => {
-        return new Promise((resolve, reject) => {
+        return new Promise<void>((resolve, reject) => {
             function scp() {
                 scp2.scp(
                     src,
@@ -122,7 +124,7 @@ export async function copyFile(conn: ConnectionArgs, src: string, dest: string):
     });
 }
 
-export async function runCommand(conn: ConnectionArgs, cmd: string): Promise<string> {
+export async function runCommand(conn: ConnectionArgs, cmd: string): Promise<void> {
     const connType = connTypeOrDefault(conn);
     if (connType !== "ssh") {
         throw new Error("only SSH connection types currently supported");
@@ -130,7 +132,7 @@ export async function runCommand(conn: ConnectionArgs, cmd: string): Promise<str
 
     const sshConn = connToSsh2(conn);
     let connectionFailCount = 0;
-    return new Promise((resolve, reject) => {
+    return new Promise<void>((resolve, reject) => {
         const conn = new ssh2.Client();
         function connect() {
             conn.on("ready", () => {
@@ -139,7 +141,7 @@ export async function runCommand(conn: ConnectionArgs, cmd: string): Promise<str
                         reject(err);
                         return;
                     }
-                    stream.on("close", (code: string, signal: string) => {
+                    stream.on("close", (code: string, _signal: string) => {
                         conn.end();
                         if (code) {
                             reject(new Error("Command exited with " + code));

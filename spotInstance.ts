@@ -1,15 +1,13 @@
 import * as pulumi from "@pulumi/pulumi";
-
-import { AzureSpotVm } from "./azure/vm";
 import { ResourceGroup } from "@pulumi/azure/core";
 import { Account, Container, Blob } from "@pulumi/azure/storage";
+import * as aws from "@pulumi/aws";
+
+import { AzureSpotVm } from "./azure/vm";
 import { AzureEvents } from "./azure/events";
 
-import * as aws from "@pulumi/aws";
 import { Ec2SpotInstance } from "./aws/ec2";
 import { AwsEvents } from "./aws/events";
-import { storage } from "@pulumi/azure";
-
 
 // Get the config ready to go.
 const config = new pulumi.Config();
@@ -19,8 +17,6 @@ const privateKeyPassphrase = config.get("privateKeyPassphrase") || "";
 const fahAllowedIP = config.requireSecret("fahAllowedIP");
 const cloudProvider = config.get("cloudProvider") || "aws";
 
-export interface SpotInstanceArgs { }
-
 export class SpotInstance extends pulumi.ComponentResource {
     private name: string;
 
@@ -28,7 +24,7 @@ export class SpotInstance extends pulumi.ComponentResource {
     public instanceId?: pulumi.Output<string>;
     public objectStorage?: pulumi.Output<string>;
 
-    constructor(name: string, args?: SpotInstanceArgs, opts?: pulumi.ComponentResourceOptions) {
+    constructor(name: string, opts?: pulumi.ComponentResourceOptions) {
         super("spotInstance", name, undefined, opts);
         this.name = name;
 
@@ -111,7 +107,7 @@ export class SpotInstance extends pulumi.ComponentResource {
             storageAccount,
         }, { parent: resourceGroup, dependsOn: azureSpotVm });
 
-        const scriptsBlob = new Blob(`${this.name}-blob`, {
+        const _scriptsBlob = new Blob(`${this.name}-blob`, {
             storageAccountName: storageAccount.name,
             storageContainerName: blobContainer.name,
             type: "Block",
@@ -210,7 +206,7 @@ export class SpotInstance extends pulumi.ComponentResource {
             if (bucketObjectCreated) {
                 return;
             }
-            const bucketObject = new aws.s3.BucketObject("fah-scripts", {
+            const _bucketObject = new aws.s3.BucketObject("fah-scripts", {
                 bucket: bucket,
                 key: zipFileName,
                 serverSideEncryption: "AES256",
