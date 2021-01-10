@@ -1,9 +1,19 @@
 import * as aws from "@pulumi/aws";
 import { Context } from "@pulumi/aws/lambda";
-import { DescribeInstancesResult, DescribeSpotInstanceRequestsResult, Instance } from "aws-sdk/clients/ec2";
+import {
+    DescribeInstancesResult,
+    DescribeSpotInstanceRequestsResult,
+    Instance,
+} from "aws-sdk/clients/ec2";
 import * as unzipper from "unzipper";
 
-import { ConnectionArgs, INSTANCE_USER, LINUX_USER_SCRIPTS_DIR, copyFile, runCommand } from "../sshUtils";
+import {
+    ConnectionArgs,
+    INSTANCE_USER,
+    LINUX_USER_SCRIPTS_DIR,
+    copyFile,
+    runCommand,
+} from "../sshUtils";
 
 const AWS_REGION = aws.config.region;
 
@@ -84,13 +94,15 @@ export async function getSpotInstance(spotRequestId: string): Promise<Instance> 
         })
         .promise();
 
-    const fulfilledInstanceRequest = latestSpotRequest.$response.data as DescribeSpotInstanceRequestsResult;
+    const fulfilledInstanceRequest =
+        latestSpotRequest.$response.data as DescribeSpotInstanceRequestsResult;
     if (!fulfilledInstanceRequest.SpotInstanceRequests) {
         throw new Error("Spot instance request could not be fetched.");
     }
     const instanceId = fulfilledInstanceRequest.SpotInstanceRequests[0].InstanceId;
     if (!instanceId) {
-        throw new Error("InstanceId is undefined. Spot instance request has not been fulfilled yet.");
+        throw new Error(
+            "InstanceId is undefined. Spot instance request has not been fulfilled yet.");
     }
 
     console.log("Waiting for instance state to be in running state...");
@@ -118,7 +130,8 @@ export async function getInstanceInfo(instanceId: string): Promise<Instance> {
         })
         .promise();
 
-    const describeInstanceResult = describeInstanceResponse.$response.data as DescribeInstancesResult;
+    const describeInstanceResult =
+        describeInstanceResponse.$response.data as DescribeInstancesResult;
     if (!describeInstanceResult.Reservations || !describeInstanceResult.Reservations[0].Instances) {
         throw new Error(`Could not find instance ${instanceId}`);
     }
@@ -132,7 +145,8 @@ export async function getInstanceInfo(instanceId: string): Promise<Instance> {
  * @param instance The EC2 instance object to which the SSH public key needs to be sent.
  * @param publicKey
  */
-export async function sendSSHPublicKeyToInstance(instance: Instance, publicKey: string): Promise<void> {
+export async function sendSSHPublicKeyToInstance(
+    instance: Instance, publicKey: string): Promise<void> {
     console.log("Sending SSH public key to the EC2 instance...");
     const ec2 = new aws.sdk.EC2InstanceConnect({
         region: AWS_REGION,
@@ -150,7 +164,8 @@ export async function sendSSHPublicKeyToInstance(instance: Instance, publicKey: 
         .promise();
 
     if (!result.Success) {
-        throw new Error(`Sending the SSH public key to the instance failed: ${result.$response.error}`);
+        throw new Error(
+            `Sending the SSH public key to the instance failed: ${result.$response.error}`);
     }
     console.log("SSH public key sent.");
 }
@@ -165,7 +180,8 @@ function getScheduledEventRuleName(spotInstanceRequestId: string): string {
 }
 
 /**
- * Create a fixed-rate scheduled event, if it doesn't exist, that will attempt to provision the spot instance
+ * Create a fixed-rate scheduled event, if it doesn't exist,
+ * that will attempt to provision the spot instance
  * identified by the spot instance request ID.
  * @param ctx The Lambda context object.
  * @param spotInstanceRequestId
@@ -182,7 +198,8 @@ async function checkAndCreateScheduledEvent(ctx: Context, spotInstanceRequestId:
             })
             .promise();
         if (result.$response.httpResponse.statusCode === 200) {
-            console.log(`Scheduled event ${SCHEDULED_EVENT_NAME_PREFIX} already exists. Won't re-create it.`);
+            console.log(
+                `Scheduled event ${SCHEDULED_EVENT_NAME_PREFIX} already exists. Won't re-create it.`);
             return;
         }
     } catch (err) {
@@ -200,7 +217,8 @@ async function checkAndCreateScheduledEvent(ctx: Context, spotInstanceRequestId:
         .putRule({
             Name: ruleName,
             Description:
-                "Scheduled Event to provision an EC2 spot instance until it succeeds. This is a temporary event and will be deleted.",
+                "Scheduled Event to provision an EC2 spot instance until it succeeds. " +
+                "This is a temporary event and will be deleted.",
             ScheduleExpression: "rate(15 minutes)",
         })
         .promise();
@@ -291,7 +309,7 @@ export async function provisionInstance(
     ctx: Context,
     spotInstanceRequestId: string,
     instancePrivateOrPublicIp: string,
-    sshPrivateKey: string
+    sshPrivateKey: string,
 ): Promise<void> {
     const conn: ConnectionArgs = {
         type: "ssh",
@@ -323,7 +341,7 @@ export async function runShutdownScript(
     ctx: Context,
     spotInstanceRequestId: string,
     instancePrivateOrPublicIp: string,
-    sshPrivateKey: string
+    sshPrivateKey: string,
 ): Promise<void> {
     const conn: ConnectionArgs = {
         type: "ssh",

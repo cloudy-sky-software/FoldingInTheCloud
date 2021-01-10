@@ -2,44 +2,52 @@ module.exports = {
     "env": {
         "node": true,
         "es2021": true,
-        "browser": false
+        "browser": false,
     },
     "extends": [
         "eslint:recommended",
         "plugin:@typescript-eslint/recommended",
         "plugin:import/errors",
         "plugin:import/warnings",
-        "plugin:import/typescript"
+        "plugin:import/typescript",
     ],
     "parser": "@typescript-eslint/parser",
     "parserOptions": {
-        "sourceType": "./tsconfig.json"
+        "sourceType": "./tsconfig.json",
     },
     "plugins": [
-        "@typescript-eslint"
+        "@typescript-eslint",
     ],
     "rules": {
         "import/order": [
             "error",
             {
-                "newlines-between": "always-and-inside-groups"
-            }
+                "newlines-between": "always-and-inside-groups",
+            },
         ],
         "indent": [
             "error",
-            4
+            4,
         ],
         "linebreak-style": [
             "error",
-            "unix"
+            "unix",
+        ],
+        "max-len": [
+            "error",
+            {
+                "code": 100,
+                "ignoreUrls": true,
+                "ignoreTemplateLiterals": true,
+            },
         ],
         "quotes": [
             "error",
-            "double"
+            "double",
         ],
         "semi": [
             "error",
-            "always"
+            "always",
         ],
         "@typescript-eslint/no-explicit-any": "off",
         "@typescript-eslint/no-unused-vars": [
@@ -47,8 +55,10 @@ module.exports = {
             {
                 "argsIgnorePattern": "^_",
                 "caughtErrorsIgnorePattern": "^ignore",
-                "varsIgnorePattern": "^_"
-            }
-        ]
-    }
+                "varsIgnorePattern": "^_",
+            },
+        ],
+        "comma-dangle": "off",
+        "@typescript-eslint/comma-dangle": ["error", "always-multiline"],
+    },
 };

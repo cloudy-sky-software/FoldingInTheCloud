@@ -71,7 +71,7 @@ export class EventsHandler extends pulumi.ComponentResource {
                     ],
                 },
             },
-            { parent: this }
+            { parent: this },
         );
 
         const rolePolicyDoc: aws.iam.PolicyDocument = {
@@ -108,7 +108,7 @@ export class EventsHandler extends pulumi.ComponentResource {
                 description: "Custom IAM policy for Lambda execution.",
                 policy: JSON.stringify(rolePolicyDoc),
             },
-            { parent: this }
+            { parent: this },
         );
 
         new aws.iam.RolePolicyAttachment(
@@ -117,7 +117,7 @@ export class EventsHandler extends pulumi.ComponentResource {
                 role: this.role,
                 policyArn: iamPolicy.arn,
             },
-            { parent: this }
+            { parent: this },
         );
 
         // Network interface actions to allow Lambda to bind to an available
@@ -128,7 +128,7 @@ export class EventsHandler extends pulumi.ComponentResource {
                 role: this.role,
                 policyArn: aws.iam.ManagedPolicies.AWSLambdaVPCAccessExecutionRole,
             },
-            { parent: this }
+            { parent: this },
         );
     }
 
@@ -157,14 +157,14 @@ export class EventsHandler extends pulumi.ComponentResource {
                     securityGroupIds: [this.args.ec2Security.securityGroup.id!],
                 },
             },
-            { parent: this }
+            { parent: this },
         );
     }
 
     private getCallbackFunction(
         bucketName: pulumi.Output<string>,
         spotInstanceRequestId: pulumi.Output<string>,
-        zipFilename: string
+        zipFilename: string,
     ) {
         return async (e: any, ctx: Context) => {
             console.log("lambda event", e);
@@ -175,8 +175,9 @@ export class EventsHandler extends pulumi.ComponentResource {
                 const instanceId = e.detail["instance-id"];
                 instance = await getInstanceInfo(instanceId);
             } else {
-                // For other events, we must query the spot instance request and get the currently running
-                // instance as it can change anytime.
+                // For other events, we must query the spot instance
+                // request and get the currently running instance as
+                // it can change anytime.
                 instance = await getSpotInstance(spotInstanceRequestId.get());
             }
             if (!instance.PublicIpAddress || !instance.Placement) {
@@ -194,56 +195,69 @@ export class EventsHandler extends pulumi.ComponentResource {
                     format: "pem",
                 },
             };
-            // If the instance is either interrupted due to a price change or terminated due to a scheduled termination,
-            // we should give the chance to "deprovision" the instance, so run the selected deprovision script in the
-            // instance.
+            // If the instance is either interrupted due to a price change
+            // or terminated due to a scheduled termination,
+            // we should give the chance to "deprovision" the instance,
+            // so run the selected deprovision script in the instance.
             if (
                 e["source"] &&
                 e.source === "aws.ec2" &&
-                (e.detail["instance-action"] === "terminate" || e.detail["state"] === "shutting-down")
+                (
+                    e.detail["instance-action"] === "terminate" ||
+                    e.detail["state"] === "shutting-down"
+                )
             ) {
                 const p = new Promise<void>((resolve, reject) => {
-                    generateKeyPair("rsa", keypairSettings, async (err: any, publicKey: string, privateKey: string) => {
-                        if (err) {
-                            reject(err);
-                            return;
-                        }
+                    generateKeyPair(
+                        "rsa", keypairSettings,
+                        async (err: any, publicKey: string, privateKey: string) => {
+                            if (err) {
+                                reject(err);
+                                return;
+                            }
 
-                        // Convert the public to an OpenSSH public key format.
-                        const sshPublicKey = sshpk.parseKey(publicKey, "pem").toString("ssh");
-                        await sendSSHPublicKeyToInstance(instance, sshPublicKey);
-                        await runShutdownScript(
-                            ctx,
-                            spotInstanceRequestId.get(),
-                            // The instance will have a private IP address.
-                            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                            instance.PrivateIpAddress!,
-                            privateKey
-                        );
-                        console.log("All done!");
-                        resolve();
-                    });
+                            // Convert the public to an OpenSSH public key format.
+                            const sshPublicKey = sshpk.parseKey(publicKey, "pem").toString("ssh");
+                            await sendSSHPublicKeyToInstance(instance, sshPublicKey);
+                            await runShutdownScript(
+                                ctx,
+                                spotInstanceRequestId.get(),
+                                // The instance will have a private IP address.
+                                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                                instance.PrivateIpAddress!,
+                                privateKey,
+                            );
+                            console.log("All done!");
+                            resolve();
+                        });
                 });
                 return p;
             }
 
             await downloadS3Object(bucketName.get(), zipFilename);
             const p = new Promise<void>((resolve, reject) => {
-                generateKeyPair("rsa", keypairSettings, async (err: any, publicKey: string, privateKey: string) => {
-                    if (err) {
-                        reject(err);
-                        return;
-                    }
+                generateKeyPair(
+                    "rsa", keypairSettings,
+                    async (err: any, publicKey: string, privateKey: string) => {
+                        if (err) {
+                            reject(err);
+                            return;
+                        }
 
-                    // Convert the public key to an OpenSSH public key format.
-                    const sshPublicKey = sshpk.parseKey(publicKey, "pem").toString("ssh");
-                    await sendSSHPublicKeyToInstance(instance, sshPublicKey);
-                    // An instance will always have a private IP address.
-                    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                    await provisionInstance(ctx, spotInstanceRequestId.get(), instance.PrivateIpAddress!, privateKey);
-                    console.log("All done!");
-                    resolve();
-                });
+                        // Convert the public key to an OpenSSH public key format.
+                        const sshPublicKey = sshpk.parseKey(publicKey, "pem").toString("ssh");
+                        await sendSSHPublicKeyToInstance(instance, sshPublicKey);
+                        await provisionInstance(
+                            ctx,
+                            spotInstanceRequestId.get(),
+                            // An instance will always have a private IP address.
+                            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                            instance.PrivateIpAddress!,
+                            privateKey,
+                        );
+                        console.log("All done!");
+                        resolve();
+                    });
             });
             return p;
         };

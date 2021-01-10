@@ -3,6 +3,7 @@ import * as crypto from "crypto";
 import * as fs from "fs";
 import * as path from "path";
 
+import { interpolate, Output } from "@pulumi/pulumi";
 import * as aws from "@pulumi/aws";
 
 export async function getAwsAz(index: number): Promise<string> {
@@ -19,8 +20,8 @@ export async function getAmi(): Promise<aws.GetAmiResult> {
         filters: [
             {
                 name: "name",
-                values: ["ubuntu/images/hvm-ssd/ubuntu-bionic-18.04-amd64-server-20200408"]
-            }
+                values: ["ubuntu/images/hvm-ssd/ubuntu-bionic-18.04-amd64-server-20200408"],
+            },
         ],
     });
 
@@ -40,7 +41,9 @@ async function _getScriptsHash(): Promise<string> {
             }
 
             files.forEach(f => {
-                const data = fs.readFileSync(path.join(__dirname, "scripts", f), { encoding: "utf8" });
+                const data = fs.readFileSync(
+                    path.join(__dirname, "scripts", f), { encoding: "utf8" },
+                );
                 hash.update(data, "utf8");
             });
 
@@ -85,4 +88,18 @@ sed '9d' /etc/udev/rules.d/40-vm-hotadd.rules
 
 echo "Rebooting the instance..."
 sudo reboot`;
+}
+
+export function getAwsSecurityGroupIngressRules(allowedIP: Output<string>, ports: number[]):
+    aws.types.input.ec2.SecurityGroupIngress[] {
+    
+    return ports.map(p => {
+        return {
+            protocol: "tcp",
+            fromPort: p,
+            toPort: p,
+            cidrBlocks: [interpolate`${allowedIP}/32`],
+        };
+    });
+
 }

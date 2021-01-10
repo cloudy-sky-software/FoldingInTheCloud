@@ -1,5 +1,10 @@
 import * as azure from "@pulumi/azure";
-import { NetworkInterface, NetworkSecurityGroup, PublicIp, VirtualNetwork } from "@pulumi/azure/network";
+import {
+    NetworkInterface,
+    NetworkSecurityGroup,
+    PublicIp,
+    VirtualNetwork,
+} from "@pulumi/azure/network";
 import * as pulumi from "@pulumi/pulumi";
 
 export interface AzureSecurityArgs {
@@ -33,7 +38,8 @@ export class AzureSecurity extends pulumi.ComponentResource {
         if (!this.vnet) {
             throw new Error("VNet hasn't been created yet.");
         }
-        const s = this.vnet.subnets.apply((subnets) => subnets.filter((s) => s.name === subnetName));
+        const s = this.vnet.subnets.apply(
+            (subnets) => subnets.filter((s) => s.name === subnetName));
         if (!s || !s.length) {
             throw new Error(`Could not find subnet with name ${subnetName} in the vnet.`);
         }
@@ -43,7 +49,9 @@ export class AzureSecurity extends pulumi.ComponentResource {
 
     private setupNetworking() {
         if (this.args.securityGroupRules.length === 0) {
-            pulumi.log.warn("Custom security rules not provided. The default allows SSH access from any source.");
+            pulumi.log.warn(
+                "Custom security rules not provided. " +
+                "The default allows SSH access from any source.");
         }
 
         this.securityGroup = new NetworkSecurityGroup(
@@ -67,7 +75,7 @@ export class AzureSecurity extends pulumi.ComponentResource {
                     },
                 ],
             },
-            { parent: this }
+            { parent: this },
         );
 
         this.vnet = new VirtualNetwork(
@@ -83,7 +91,7 @@ export class AzureSecurity extends pulumi.ComponentResource {
                     },
                 ],
             },
-            { parent: this }
+            { parent: this },
         );
 
         const publicIPs = new PublicIp(
@@ -95,7 +103,7 @@ export class AzureSecurity extends pulumi.ComponentResource {
                 idleTimeoutInMinutes: 4,
                 ipVersion: "IPv4",
             },
-            { parent: this }
+            { parent: this },
         );
 
         this.publicNic = new NetworkInterface(
@@ -112,7 +120,7 @@ export class AzureSecurity extends pulumi.ComponentResource {
                     },
                 ],
             },
-            { parent: this }
+            { parent: this },
         );
     }
 }

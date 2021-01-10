@@ -1,7 +1,7 @@
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
 
-import { getAmi, getAwsUserData } from "../utils";
+import { getAmi, getAwsUserData } from "../awsUtils";
 
 import { Ec2InstanceSecurity } from "./security";
 
@@ -38,7 +38,7 @@ export class Ec2SpotInstance extends pulumi.ComponentResource {
             {
                 securityGroupIngressRules: args.ingressRules,
             },
-            { ...opts, parent: this }
+            { ...opts, parent: this },
         );
         this.createInstance();
         this.registerOutputs({
@@ -51,7 +51,8 @@ export class Ec2SpotInstance extends pulumi.ComponentResource {
             throw new Error("IAM instance profile doesn't seem to have been initialized.");
         }
         if (!this.ec2Security.publicSubnet || !this.ec2Security.securityGroup) {
-            throw new Error("Instance security has not been created. Cannot create a spot instance request.");
+            throw new Error(
+                "Instance security has not been created. Cannot create a spot instance request.");
         }
 
         // Create an EC2 server that we'll then provision stuff onto.
@@ -60,7 +61,7 @@ export class Ec2SpotInstance extends pulumi.ComponentResource {
             {
                 publicKey: this.args.publicKey,
             },
-            { parent: this }
+            { parent: this },
         );
         this.spotRequest = new aws.ec2.SpotInstanceRequest(
             `${this.name}-spotreq`,
@@ -86,7 +87,7 @@ export class Ec2SpotInstance extends pulumi.ComponentResource {
                 },
                 userData: getAwsUserData(),
             },
-            { parent: this }
+            { parent: this },
         );
 
         return true;

@@ -3,7 +3,7 @@ import { LinuxVirtualMachine } from "@pulumi/azure/compute";
 import { ResourceGroup } from "@pulumi/azure/core";
 import * as pulumi from "@pulumi/pulumi";
 
-import { getUserData } from "../utils";
+import { getUserData } from "../awsUtils";
 
 import { AzureSecurity } from "./security";
 
@@ -11,6 +11,7 @@ export interface AzureSpotVmArgs {
     resourceGroup: ResourceGroup;
     publicKey: string;
     maxSpotPrice: number;
+    instanceType: string;
 
     securityGroupRules: pulumi.Input<azure.types.input.network.NetworkSecurityGroupSecurityRule>[];
 }
@@ -31,7 +32,7 @@ export class AzureSpotVm extends pulumi.ComponentResource {
                 resourceGroup: this.args.resourceGroup,
                 securityGroupRules: this.args.securityGroupRules,
             },
-            { parent: this }
+            { parent: this },
         );
 
         this.createInstance();
@@ -57,8 +58,7 @@ export class AzureSpotVm extends pulumi.ComponentResource {
                     sku: "18.04-LTS",
                     version: "Latest",
                 },
-                // Standard_NC6=6 cores, 56GB RAM, and an NVIDIA K80 GPU.
-                size: "Standard_NC6",
+                size: this.args.instanceType,
                 osDisk: {
                     diskSizeGb: 50,
                     storageAccountType: "Standard_LRS",
@@ -81,7 +81,7 @@ export class AzureSpotVm extends pulumi.ComponentResource {
                 // Enable the Azure VM Agent if you are planning to install VM extensions.
                 // provisionVmAgent: true
             },
-            { parent: this }
+            { parent: this },
         );
     }
 }
