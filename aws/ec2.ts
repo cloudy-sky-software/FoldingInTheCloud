@@ -34,7 +34,7 @@ export class Ec2SpotInstance extends pulumi.ComponentResource {
         this.name = name;
 
         this.ec2Security = new Ec2InstanceSecurity(
-            `${name}-sec`,
+            "security",
             {
                 securityGroupIngressRules: args.ingressRules,
             },
@@ -57,17 +57,19 @@ export class Ec2SpotInstance extends pulumi.ComponentResource {
 
         // Create an EC2 server that we'll then provision stuff onto.
         const key = new aws.ec2.KeyPair(
-            `${this.name}-InstanceKey`,
+            "keypair",
             {
                 publicKey: this.args.publicKey,
             },
             { parent: this },
         );
         this.spotRequest = new aws.ec2.SpotInstanceRequest(
-            `${this.name}-spotreq`,
+            "spotRequest",
             {
                 instanceType: this.args.instanceType,
-                ami: pulumi.output(getAmi()).apply((ami) => ami.id),
+                ami: pulumi.output(
+                    getAmi("ubuntu/images/hvm-ssd/ubuntu-bionic-18.04-amd64-server-20210105"))
+                    .apply((ami) => ami.id),
                 keyName: key.keyName,
                 rootBlockDevice: {
                     volumeSize: 50,

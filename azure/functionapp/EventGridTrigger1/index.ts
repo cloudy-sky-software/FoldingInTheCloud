@@ -1,11 +1,15 @@
 import { AzureFunction, Context } from "@azure/functions";
+import { BlobServiceClient } from "@azure/storage-blob";
 
-import {
-    BlobServiceClient
-} from "@azure/storage-blob";
 import * as unzipper from "unzipper";
 
-import { copyFile, LINUX_USER_SCRIPTS_DIR, INSTANCE_USER, ConnectionArgs, runCommand } from "../../../sshUtils";
+import {
+    copyFile,
+    LINUX_USER_SCRIPTS_DIR,
+    INSTANCE_USER,
+    ConnectionArgs,
+    runCommand,
+} from "../../../sshUtils";
 
 // https://github.com/projectkudu/kudu/wiki/Understanding-the-Azure-App-Service-file-system#temporary-files
 const LOCAL_SCRIPTS_PATH = "D:\\local\\Temp";
@@ -68,7 +72,7 @@ async function provisionInstance(context: Context, conn: ConnectionArgs) {
 
     const commands = [
         `chmod 755 ${LINUX_USER_SCRIPTS_DIR}*.sh`,
-        `. ${LINUX_USER_SCRIPTS_DIR}install.sh`
+        `. ${LINUX_USER_SCRIPTS_DIR}install.sh`,
     ];
 
     context.log("Executing commands on the instance...");

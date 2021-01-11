@@ -39,10 +39,10 @@ export class AwsEvents extends pulumi.ComponentResource {
         }
 
         args.bucket.onObjectCreated(
-            "fah-object-created", handler.callbackFunction, undefined, { parent: this });
+            "objectCreatedSub", handler.callbackFunction, undefined, { parent: this });
 
         const instanceRunningEvent = new aws.cloudwatch.EventRule(
-            `${name}-inst-running`,
+            "instanceRunningRule",
             {
                 description: "Event rule for Spot Instance request fulfillment.",
                 eventPattern: JSON.stringify({
@@ -57,10 +57,10 @@ export class AwsEvents extends pulumi.ComponentResource {
         );
 
         instanceRunningEvent.onEvent(
-            `${name}-inst-running-sub`, handler.callbackFunction, undefined, { parent: this });
+            "instanceRunningSub", handler.callbackFunction, undefined, { parent: this });
 
         const eventRule = new aws.cloudwatch.EventRule(
-            `${name}-interruption`,
+            "spotInstInterruptionRule",
             {
                 description: "Event rule for Spot Instance request fulfillment.",
                 eventPattern: JSON.stringify({
@@ -72,7 +72,7 @@ export class AwsEvents extends pulumi.ComponentResource {
         );
 
         eventRule.onEvent(
-            `${name}-interruption-sub`, handler.callbackFunction, undefined, { parent: this });
+            "spotInstInterruptionSub", handler.callbackFunction, undefined, { parent: this });
 
         this.registerOutputs({});
     }

@@ -23,7 +23,7 @@ pulumi.all([privateKey, privateKeyPassphrase]).apply(([prKey, pass]) => {
     pulumi.log.info("Parsed private key successfully!", undefined, undefined, true);
 });
 
-const randomPassword = new random.RandomPassword("fahRandomPassword", {
+const randomPassword = new random.RandomPassword("fahRemoteControlPass", {
     length: 12,
     special: true,
     upper: true,

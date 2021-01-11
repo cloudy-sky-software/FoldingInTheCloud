@@ -48,7 +48,7 @@ export class AzureEvents extends pulumi.ComponentResource {
         this.args = args;
 
         const handler = new EventsHandler(
-            `${this.name}-hndlr`,
+            "eventsHandler",
             {
                 privateKey: this.args.privateKey,
                 resourceGroup: this.args.resourceGroup,
@@ -71,7 +71,7 @@ export class AzureEvents extends pulumi.ComponentResource {
                 ];
             });
         const _networkSg = new NetworkSecurityRule(
-            `${this.name}`,
+            "functionAppSecurityRule",
             {
                 name: "AllowSSHFromFunc",
                 description: "Allow SSH access from Function App.",
@@ -97,7 +97,7 @@ export class AzureEvents extends pulumi.ComponentResource {
             .apply((keys) => keys.systemKeys["eventgrid_extension"]);
         const url = pulumi.interpolate `https://${functionAppName}.azurewebsites.net/runtime/webhooks/eventgrid?functionName=${functionName}&code=${systemKey}`;
         const _evSub = new azure.eventgrid.EventSubscription(
-            `${this.name}-blob`,
+            "eventSubscription",
             {
                 scope: this.args.storageAccount.id,
                 retryPolicy: {

@@ -4,8 +4,16 @@
     console client.  This configuration file format is explained
     in detail in the Client User's Guide.
 
-    To set your user name, team and passkey just edit the text
-    in quotes below.
+    To set your user name, team and passkey just set the corresponding
+    Pulumi stack configuration options.
+
+    This file has the following placeholders that are replaced at deploy time
+    in the Pulumi app:
+
+    - {{Username}}
+    - {{PassKey}}
+    - {{AllowedIP}}
+    - {{RemoteControlPass}}
   -->
 
   <!-- User Information -->

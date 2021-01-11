@@ -55,7 +55,7 @@ export class EventsHandler extends pulumi.ComponentResource {
     createIAM(): void {
         // Configure IAM so that the AWS Lambda can be run.
         this.role = new aws.iam.Role(
-            `${this.name}-lambda-role`,
+            "lambdaIamRole",
             {
                 assumeRolePolicy: {
                     Version: "2012-10-17",
@@ -103,7 +103,7 @@ export class EventsHandler extends pulumi.ComponentResource {
             ],
         };
         const iamPolicy = new aws.iam.Policy(
-            `${this.name}-lambda-pol`,
+            "lambdaPolicy",
             {
                 description: "Custom IAM policy for Lambda execution.",
                 policy: JSON.stringify(rolePolicyDoc),
@@ -112,7 +112,7 @@ export class EventsHandler extends pulumi.ComponentResource {
         );
 
         new aws.iam.RolePolicyAttachment(
-            `${this.name}-lambda-attach-pol1`,
+            "lambdaPolicyAttachment",
             {
                 role: this.role,
                 policyArn: iamPolicy.arn,
@@ -123,7 +123,7 @@ export class EventsHandler extends pulumi.ComponentResource {
         // Network interface actions to allow Lambda to bind to an available
         // interface within the VPC.
         new aws.iam.RolePolicyAttachment(
-            `${this.name}-lambda-attach-pol2`,
+            "lambdaVpcAccessPolicyAttach",
             {
                 role: this.role,
                 policyArn: aws.iam.ManagedPolicies.AWSLambdaVPCAccessExecutionRole,
@@ -141,7 +141,7 @@ export class EventsHandler extends pulumi.ComponentResource {
         const bucketName = this.args.bucketName;
         const spotInstanceRequestId = this.args.spotInstanceRequestId;
         this.callbackFunction = new aws.lambda.CallbackFunction(
-            `${this.name}-provisioner`,
+            "provisionerLambda",
             {
                 callback: this.getCallbackFunction(bucketName, spotInstanceRequestId, zipFileName),
                 role: this.role,

@@ -32,17 +32,17 @@ export class EventsHandler extends pulumi.ComponentResource {
         this.args = args;
 
         const faContainer = new Container(
-            `${this.name}-funcstrg`,
+            "functionAppStorage",
             {
+                name: "function-app-storage",
                 storageAccountName: this.args.storageAccount.name,
                 containerAccessType: "private",
-                name: "function-app-storage",
             },
             { parent: this },
         );
 
         const ai = new Insights(
-            "appinsights",
+            "appInsights",
             {
                 resourceGroupName: this.args.resourceGroup.name,
                 retentionInDays: 30,
@@ -51,7 +51,7 @@ export class EventsHandler extends pulumi.ComponentResource {
             { parent: this },
         );
         this.functionApp = new ArchiveFunctionApp(
-            `${this.name}-func`,
+            "functionApp",
             {
                 resourceGroup: this.args.resourceGroup,
                 // The connection string for this is stored as `AzureWebJobsStorage` automatically

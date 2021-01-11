@@ -60,19 +60,21 @@ export class SpotInstance extends pulumi.ComponentResource {
 
         // The storage to use for storing the workload scripts, as well as
         // the Azure Functions zip-blob.
-        const storageAccount = new Account(`${this.name}`, {
+        const storageAccount = new Account("storageAccount", {
+            // Azure Storage account names must be in lowercase.
+            name: "storageaccount",
             accountReplicationType: "LRS",
             resourceGroupName: resourceGroup.name,
             accountTier: "Standard",
         }, { parent: resourceGroup });
 
-        const blobContainer = new Container(`${this.name}Container`, {
+        const blobContainer = new Container("container", {
             containerAccessType: "private",
             storageAccountName: storageAccount.name,
             name: "scripts",
         }, { parent: storageAccount });
 
-        const azureSpotVm = new AzureSpotVm(`${this.name}`, {
+        const azureSpotVm = new AzureSpotVm(`${this.name}SpotInst`, {
             resourceGroup,
             publicKey,
 
@@ -99,10 +101,10 @@ export class SpotInstance extends pulumi.ComponentResource {
         }, { parent: resourceGroup, dependsOn: storageAccount });
 
         if (!azureSpotVm.spotInstance || !azureSpotVm.vmSecurity.securityGroup) {
-            return;
+            throw new Error("");
         }
 
-        const events = new AzureEvents(`${this.name}-events`, {
+        const events = new AzureEvents("events", {
             scriptsContainer: blobContainer,
             securityGroup: azureSpotVm.vmSecurity.securityGroup,
             vm: azureSpotVm.spotInstance,
@@ -111,7 +113,7 @@ export class SpotInstance extends pulumi.ComponentResource {
             storageAccount,
         }, { parent: resourceGroup, dependsOn: azureSpotVm });
 
-        const _scriptsBlob = new Blob(`${this.name}-blob`, {
+        const _scriptsBlob = new Blob("scriptsBlob", {
             storageAccountName: storageAccount.name,
             storageContainerName: blobContainer.name,
             type: "Block",
@@ -129,8 +131,8 @@ export class SpotInstance extends pulumi.ComponentResource {
     }
 
     private createAwsInfra() {
-        const bucket = new aws.s3.Bucket("fah-bucket", {
-            bucket: "fah-bucket",
+        const bucket = new aws.s3.Bucket("bucket", {
+            bucket: "bucket",
             serverSideEncryptionConfiguration: {
                 rule: {
                     applyServerSideEncryptionByDefault: {
@@ -143,7 +145,7 @@ export class SpotInstance extends pulumi.ComponentResource {
             },
         }, { parent: this });
 
-        const ec2SpotInstance = new Ec2SpotInstance(`${this.name}`, {
+        const ec2SpotInstance = new Ec2SpotInstance(`${this.name}SpotInst`, {
             /**
              * When picking an instance type, be sure to also pick a region
              * where the chance of interruption is low. Set the location using
@@ -185,7 +187,7 @@ export class SpotInstance extends pulumi.ComponentResource {
             throw new Error("Cannot proceed since the instance request is undefined.");
         }
 
-        const zipFileName = "workload-scripts";
+        const zipFileName = "scripts";
         const events = new AwsEvents("events", {
             ec2Security: ec2SpotInstance.ec2Security,
             spotInstanceRequest: ec2SpotInstance.spotRequest,

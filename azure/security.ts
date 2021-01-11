@@ -55,7 +55,7 @@ export class AzureSecurity extends pulumi.ComponentResource {
         }
 
         this.securityGroup = new NetworkSecurityGroup(
-            `${this.name}-securityGroup`,
+            "securityGroup",
             {
                 resourceGroupName: this.args.resourceGroup.name,
                 securityRules: this.args.securityGroupRules || [
@@ -79,7 +79,7 @@ export class AzureSecurity extends pulumi.ComponentResource {
         );
 
         this.vnet = new VirtualNetwork(
-            `${this.name}-vnet`,
+            "vnet",
             {
                 addressSpaces: ["10.10.0.0/24"],
                 resourceGroupName: this.args.resourceGroup.name,
@@ -95,7 +95,7 @@ export class AzureSecurity extends pulumi.ComponentResource {
         );
 
         const publicIPs = new PublicIp(
-            `${this.name}-publicIp`,
+            "publicIp",
             {
                 allocationMethod: "Dynamic",
                 resourceGroupName: this.args.resourceGroup.name,
@@ -107,7 +107,7 @@ export class AzureSecurity extends pulumi.ComponentResource {
         );
 
         this.publicNic = new NetworkInterface(
-            `${this.name}-pub`,
+            "publicNic",
             {
                 resourceGroupName: this.args.resourceGroup.name,
                 ipConfigurations: [
