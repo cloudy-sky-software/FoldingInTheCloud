@@ -27,7 +27,7 @@ export class AzureSpotVm extends pulumi.ComponentResource {
         this.args = args;
 
         this.vmSecurity = new AzureSecurity(
-            `${name}-sec`,
+            "security",
             {
                 resourceGroup: this.args.resourceGroup,
                 securityGroupRules: this.args.securityGroupRules,
@@ -49,7 +49,7 @@ export class AzureSpotVm extends pulumi.ComponentResource {
         }
 
         this.spotInstance = new LinuxVirtualMachine(
-            "spot-vm",
+            "spotVm",
             {
                 resourceGroupName: this.args.resourceGroup.name,
                 sourceImageReference: {

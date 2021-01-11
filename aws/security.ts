@@ -57,7 +57,7 @@ export class Ec2InstanceSecurity extends pulumi.ComponentResource {
             ],
         };
         const instanceRole = new aws.iam.Role(
-            `${this.name}-role`,
+            "instanceIamRole",
             {
                 assumeRolePolicy: JSON.stringify(assumeInstanceRolePolicyDoc),
             },
@@ -65,7 +65,7 @@ export class Ec2InstanceSecurity extends pulumi.ComponentResource {
         );
 
         const _instanceRolePolicy = new aws.iam.RolePolicy(
-            `${this.name}-policy`,
+            "instanceRolePolicy",
             {
                 role: instanceRole.id,
                 policy: instanceRolePolicyDoc,
@@ -74,7 +74,7 @@ export class Ec2InstanceSecurity extends pulumi.ComponentResource {
         );
 
         this.instanceProfile = new aws.iam.InstanceProfile(
-            `${this.name}-profile`,
+            "instanceProfile",
             {
                 role: instanceRole,
             },
@@ -88,7 +88,7 @@ export class Ec2InstanceSecurity extends pulumi.ComponentResource {
         }
 
         const eip = new aws.ec2.Eip(
-            `${this.name}-eip`,
+            "eip",
             {
                 vpc: true,
             },
@@ -96,7 +96,7 @@ export class Ec2InstanceSecurity extends pulumi.ComponentResource {
         );
 
         const natGw = new aws.ec2.NatGateway(
-            `${this.name}-natgw`,
+            "natGateway",
             {
                 allocationId: eip.id,
                 subnetId: this.publicSubnet.id,
@@ -105,7 +105,7 @@ export class Ec2InstanceSecurity extends pulumi.ComponentResource {
         );
 
         const privateRouteTable = new aws.ec2.RouteTable(
-            `${this.name}-nat-rt`,
+            "privateSubnetRoute",
             {
                 vpcId: vpc.id,
                 routes: [
@@ -125,7 +125,7 @@ export class Ec2InstanceSecurity extends pulumi.ComponentResource {
          * connections with them.
          */
         const _natRouteTableAssoc = new aws.ec2.RouteTableAssociation(
-            `${this.name}-nat-rtAssoc`,
+            "privateSubnetRouteAssoc",
             {
                 routeTableId: privateRouteTable.id,
                 subnetId: this.privateSubnet.id,
@@ -140,7 +140,7 @@ export class Ec2InstanceSecurity extends pulumi.ComponentResource {
         }
 
         const ig = new aws.ec2.InternetGateway(
-            `${this.name}-ig`,
+            "internetGateway",
             {
                 vpcId: vpc.id,
             },
@@ -148,7 +148,7 @@ export class Ec2InstanceSecurity extends pulumi.ComponentResource {
         );
 
         const routeTable = new aws.ec2.RouteTable(
-            `${this.name}-rt`,
+            "internetRoute",
             {
                 vpcId: vpc.id,
                 routes: [
@@ -167,7 +167,7 @@ export class Ec2InstanceSecurity extends pulumi.ComponentResource {
          * also makes them reachable from the internet.
          */
         const _routeTableAssoc = new aws.ec2.RouteTableAssociation(
-            `${this.name}-rtAssoc`,
+            "publicSubnetRouteAssoc",
             {
                 routeTableId: routeTable.id,
                 subnetId: this.publicSubnet.id,
@@ -178,7 +178,7 @@ export class Ec2InstanceSecurity extends pulumi.ComponentResource {
 
     private setupNetworking() {
         const vpc = new aws.ec2.Vpc(
-            `${this.name}-vpc`,
+            "vpc",
             {
                 cidrBlock: "10.10.0.0/16",
                 enableDnsHostnames: true,
@@ -187,7 +187,7 @@ export class Ec2InstanceSecurity extends pulumi.ComponentResource {
         );
 
         this.publicSubnet = new aws.ec2.Subnet(
-            `${this.name}-subnet`,
+            "publicSubnet",
             {
                 vpcId: vpc.id,
                 cidrBlock: "10.10.0.0/24",
@@ -198,7 +198,7 @@ export class Ec2InstanceSecurity extends pulumi.ComponentResource {
         );
 
         this.privateSubnet = new aws.ec2.Subnet(
-            `${this.name}-priv-subnet`,
+            "privateSubnet",
             {
                 vpcId: vpc.id,
                 // We will also use this subnet to deploy Lambda resources.
@@ -210,7 +210,7 @@ export class Ec2InstanceSecurity extends pulumi.ComponentResource {
         );
 
         this.securityGroup = new aws.ec2.SecurityGroup(
-            `${this.name}-secGroup`,
+            "securityGroup",
             {
                 description: "Security group for Spot instance.",
                 ingress: this.args.securityGroupIngressRules,
