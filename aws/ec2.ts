@@ -67,7 +67,9 @@ export class Ec2SpotInstance extends pulumi.ComponentResource {
             "spotRequest",
             {
                 instanceType: this.args.instanceType,
-                ami: pulumi.output(getAmi()).apply((ami) => ami.id),
+                ami: pulumi.output(
+                    getAmi("ubuntu/images/hvm-ssd/ubuntu-bionic-18.04-amd64-server-20210105"))
+                    .apply((ami) => ami.id),
                 keyName: key.keyName,
                 rootBlockDevice: {
                     volumeSize: 50,

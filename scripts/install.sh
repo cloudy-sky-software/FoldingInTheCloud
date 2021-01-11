@@ -2,6 +2,7 @@
 
 echo "Launching FAH installation script..."
 
+# Get the latest version info from https://foldingathome.org/start-folding/.
 MAJOR_MINOR_VERSION=7.6
 PATCH_VERSION=21
 VERSION=${MAJOR_MINOR_VERSION}.${PATCH_VERSION}

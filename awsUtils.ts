@@ -13,14 +13,19 @@ export async function getAwsAz(index: number): Promise<string> {
     return azs.names[index];
 }
 
-export async function getAmi(): Promise<aws.GetAmiResult> {
+/**
+ * Returns the AWS AMI information for the given image name.
+ * Use https://cloud-images.ubuntu.com/locator/ec2/ to locate
+ * an appropriate image.
+ */
+export async function getAmi(imageName: string): Promise<aws.GetAmiResult> {
     const ami = await aws.getAmi({
         owners: ["099720109477"],
         mostRecent: true,
         filters: [
             {
                 name: "name",
-                values: ["ubuntu/images/hvm-ssd/ubuntu-bionic-18.04-amd64-server-20200408"],
+                values: [imageName],
             },
         ],
     });
