@@ -61,6 +61,8 @@ export class SpotInstance extends pulumi.ComponentResource {
         // The storage to use for storing the workload scripts, as well as
         // the Azure Functions zip-blob.
         const storageAccount = new Account("storageAccount", {
+            // Azure Storage account names must be in lowercase.
+            name: "storageaccount",
             accountReplicationType: "LRS",
             resourceGroupName: resourceGroup.name,
             accountTier: "Standard",
