@@ -75,8 +75,7 @@ The cloud provider the app uses depends on the configuration option `cloudProvid
 Your stack name (the one you enter when you run `pulumi stack init`) can be whatever you choose.
 It's the configuration values that change the controls the deployment to a cloud provider.
 
-See [`config.ts`](https://github.com/praneetloke/FoldingInTheCloud/blob/master/config.ts) for more
-configuration options.
+See [`config.ts`](https://github.com/praneetloke/FoldingInTheCloud/blob/master/config.ts) for more configuration options.
 
 ### Cloud provider credentials
 
@@ -84,8 +83,7 @@ You will need an account with [AWS](https://portal.aws.amazon.com/billing/signup
 
 #### AWS Setup
 
-Learn how to create [AWS Secret Keys](https://aws.amazon.com/premiumsupport/knowledge-center/create-access-key/). Read
-more about the [AWS setup for Pulumi](https://www.pulumi.com/docs/intro/cloud-providers/aws/setup/).
+Learn how to create [AWS Secret Keys](https://aws.amazon.com/premiumsupport/knowledge-center/create-access-key/). Read more about the [AWS setup for Pulumi](https://www.pulumi.com/docs/intro/cloud-providers/aws/setup/).
 
 #### Azure Setup
 
