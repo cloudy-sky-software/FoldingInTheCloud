@@ -14,7 +14,7 @@
   "dependencies": {
     "@azure/storage-blob": "^12.2.1",
     "scp2": "github:spmjs/node-scp2#master",
-    "ssh2": "^0.8.9",
+    "ssh2": "^1.5.0",
     "unzipper": "^0.10.11"
   },
   "devDependencies": {
